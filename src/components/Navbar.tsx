@@ -40,9 +40,11 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({collapsed, onPress, active
         !active && isHovered && styles.addTaskButtonHover,
       ]}>
       <CirclePlus size={18} color={colors.indigo[600]} strokeWidth={1.5} />
-      <Animated.View style={{opacity: textOpacity}}>
-        <Text style={styles.addTaskText}>Add task</Text>
-      </Animated.View>
+      {!collapsed && (
+        <Animated.View style={{opacity: textOpacity}}>
+          <Text style={styles.addTaskText}>Add task</Text>
+        </Animated.View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -136,15 +138,17 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
             )}
           </TouchableOpacity>
           <Animated.View style={{opacity: opacityAnim}}>
-            <TouchableOpacity
-              onPress={toggleCollapse}
-              style={styles.collapseButton}>
-              <PanelLeftClose
-                size={18}
-                color={colors.gray.light[500]}
-                strokeWidth={1.5}
-              />
-            </TouchableOpacity>
+            {!collapsed && (
+              <TouchableOpacity
+                onPress={toggleCollapse}
+                style={styles.collapseButton}>
+                <PanelLeftClose
+                  size={18}
+                  color={colors.gray.light[500]}
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+            )}
           </Animated.View>
         </View>
 
@@ -178,35 +182,39 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
 
         {/* Divider */}
         <Animated.View style={{opacity: opacityAnim}}>
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-          </View>
+          {!collapsed && (
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+            </View>
+          )}
         </Animated.View>
 
         {/* Tasks Section */}
         <Animated.View style={{opacity: opacityAnim, flex: !collapsed ? 1 : 0}}>
-          <View style={styles.tasksSection}>
-            <View style={styles.tasksSectionHeader}>
-              <Text style={styles.tasksSectionTitle}>Tasks</Text>
+          {!collapsed && (
+            <View style={styles.tasksSection}>
+              <View style={styles.tasksSectionHeader}>
+                <Text style={styles.tasksSectionTitle}>Tasks</Text>
+              </View>
+              <ScrollView style={styles.tasksList}>
+                {tasks.map(task => (
+                  <NavItem
+                    key={task.id}
+                    label={task.label}
+                    collapsed={collapsed}
+                    active={task.id === '4' && currentPage === 'taskDetail'}
+                    onPress={() => task.id === '4' ? onNavigate('taskDetail') : console.log(task.label)}
+                    textOpacity={opacityAnim}
+                  />
+                ))}
+              </ScrollView>
             </View>
-            <ScrollView style={styles.tasksList}>
-              {tasks.map(task => (
-                <NavItem
-                  key={task.id}
-                  label={task.label}
-                  collapsed={collapsed}
-                  active={task.id === '4' && currentPage === 'taskDetail'}
-                  onPress={() => task.id === '4' ? onNavigate('taskDetail') : console.log(task.label)}
-                  textOpacity={opacityAnim}
-                />
-              ))}
-            </ScrollView>
-          </View>
+          )}
         </Animated.View>
 
         {/* User Profile */}
-        {!collapsed ? (
-          <Animated.View style={{opacity: opacityAnim}}>
+        <Animated.View style={{opacity: opacityAnim}}>
+          {!collapsed && (
             <View style={styles.userProfile}>
               <Image
                 source={{uri: 'https://via.placeholder.com/34'}}
@@ -214,8 +222,9 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               />
               <Text style={styles.userName}>Cahil Sankar</Text>
             </View>
-          </Animated.View>
-        ) : (
+          )}
+        </Animated.View>
+        {collapsed && (
           <View style={styles.userProfileCollapsed}>
             <Image
               source={{uri: 'https://via.placeholder.com/34'}}

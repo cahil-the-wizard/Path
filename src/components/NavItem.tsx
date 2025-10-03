@@ -41,7 +41,7 @@ export const NavItem: React.FC<NavItemProps> = ({
           <Icon size={18} color={iconColor} strokeWidth={1.5} />
         </View>
       )}
-      {label && textOpacity && (
+      {!collapsed && label && textOpacity && (
         <Animated.View style={{opacity: textOpacity, flex: 1}}>
           <Text
             style={[styles.text, {color: textColor}]}
@@ -51,7 +51,7 @@ export const NavItem: React.FC<NavItemProps> = ({
           </Text>
         </Animated.View>
       )}
-      {label && !textOpacity && (
+      {!collapsed && label && !textOpacity && (
         <Text
           style={[styles.text, {color: textColor}]}
           numberOfLines={1}
