@@ -8,18 +8,26 @@ interface StepProps {
   title: string;
   description?: string;
   completed?: boolean;
+  onToggle?: () => void;
   onSplit?: () => void;
+  isSplitting?: boolean;
 }
 
 export const Step: React.FC<StepProps> = ({
   title,
   description,
   completed = false,
+  onToggle,
   onSplit,
+  isSplitting = false,
 }) => {
   return (
     <View style={styles.container}>
-      <View style={styles.iconContainer}>
+      <View
+        style={styles.iconContainer}
+        onTouchEnd={onToggle}
+        // @ts-ignore - web-specific prop
+        onClick={onToggle}>
         {completed ? (
           <View style={styles.completedIcon}>
             <Check size={12} color="white" strokeWidth={2} />
@@ -46,9 +54,10 @@ export const Step: React.FC<StepProps> = ({
               <Button
                 variant="tertiary"
                 size="small"
-                label="Split"
+                label={isSplitting ? 'Splitting...' : 'Split'}
                 leftIcon={Circle}
                 onPress={onSplit}
+                disabled={isSplitting}
               />
             </View>
           )}
@@ -73,6 +82,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     position: 'relative',
+    cursor: 'pointer',
   },
   completedIcon: {
     width: 24,

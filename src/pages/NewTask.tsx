@@ -1,13 +1,53 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
 import {CirclePlus, Paperclip, Mic, ArrowRight} from 'lucide-react-native';
 import {colors} from '../theme/tokens';
+import {apiClient} from '../services/apiClient';
+import {useNavigate} from 'react-router-dom';
 
 export const NewTask: React.FC = () => {
   const [taskInput, setTaskInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCreateTask = async () => {
+    if (!taskInput.trim()) {
+      Alert.alert('Error', 'Please enter a task description');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Create the task
+      const createResponse = await apiClient.createTask({
+        prompt: taskInput.trim(),
+      });
+
+      // Poll for completion
+      const queueStatus = await apiClient.pollQueueStatus(createResponse.queue_id);
+
+      if (queueStatus.result?.task_id) {
+        // Task created successfully
+        setTaskInput('');
+        Alert.alert('Success', 'Task created successfully!', [
+          {
+            text: 'OK',
+            onPress: () => navigate('/'),
+          },
+        ]);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to create task'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -49,8 +89,17 @@ export const NewTask: React.FC = () => {
                         variant="primary"
                         size="large"
                         label=""
-                        leftIcon={ArrowRight}
+                        leftIcon={isLoading ? undefined : ArrowRight}
+                        onPress={handleCreateTask}
+                        disabled={isLoading}
                       />
+                      {isLoading && (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.indigo[600]}
+                          style={styles.loader}
+                        />
+                      )}
                     </View>
                   </View>
                 </View>
@@ -144,5 +193,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     gap: 4,
+  },
+  loader: {
+    position: 'absolute',
+    right: 16,
   },
 });

@@ -1,11 +1,42 @@
-import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {Sun, Timer} from 'lucide-react-native';
 import {TodayCard} from '../components/TodayCard';
 import {colors, typography} from '../theme/tokens';
+import {apiClient} from '../services/apiClient';
+import {useNavigate} from 'react-router-dom';
+import type {TaskSummary} from '../types/backend';
 
 export const Today: React.FC = () => {
+  const [tasks, setTasks] = useState<TaskSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.getTasksSummary();
+      setTasks(response.tasks);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      // If unauthorized, might need to re-login
+      if (error instanceof Error && error.message.includes('Invalid or expired token')) {
+        console.warn('Session expired, user may need to re-login');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTaskPress = (taskId: string) => {
+    navigate(`/task?id=${taskId}`);
+  };
+
   const today = new Date();
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -20,8 +51,8 @@ export const Today: React.FC = () => {
         <View style={styles.body}>
           <Text style={styles.heading}>
             <Text style={styles.headingGray}>Breathe easy.{'\n'}</Text>
-            <Text style={styles.headingIndigo}>3 steps</Text>
-            <Text style={styles.headingDark}> to stay on track.</Text>
+            <Text style={styles.headingIndigo}>{tasks.length} steps</Text>
+            <Text style={styles.headingDark}>{' '}to stay on track.</Text>
           </Text>
 
           <View style={styles.stepsTable}>
@@ -31,35 +62,32 @@ export const Today: React.FC = () => {
               <Text style={styles.dateText}>{dayString}</Text>
             </View>
 
-            <View style={styles.cardsContainer}>
-              <TodayCard
-                taskName="Blog Post"
-                totalSteps={5}
-                completedSteps={3}
-                stepTitle="Draft content outline"
-                description="Create a simple outline with intro, 3–4 main points, and a conclusion"
-                chipIcon={Timer}
-                chipLabel="10 minutes of focus"
-              />
-              <TodayCard
-                taskName="Blog Post"
-                totalSteps={5}
-                completedSteps={3}
-                stepTitle="Draft content outline"
-                description="Create a simple outline with intro, 3–4 main points, and a conclusion"
-                chipIcon={Timer}
-                chipLabel="10 minutes of focus"
-              />
-              <TodayCard
-                taskName="Blog Post"
-                totalSteps={5}
-                completedSteps={3}
-                stepTitle="Draft content outline"
-                description="Create a simple outline with intro, 3–4 main points, and a conclusion"
-                chipIcon={Timer}
-                chipLabel="10 minutes of focus"
-              />
-            </View>
+            {isLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={colors.indigo[600]} />
+              </View>
+            ) : tasks.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No tasks yet. Create your first one!</Text>
+              </View>
+            ) : (
+              <View style={styles.cardsContainer}>
+                {tasks.map(task => (
+                  <TodayCard
+                    key={task.id}
+                    taskId={task.id}
+                    taskName={task.title}
+                    totalSteps={0}
+                    completedSteps={0}
+                    stepTitle={task.next_step?.title || 'No steps yet'}
+                    description=""
+                    chipIcon={Timer}
+                    chipLabel={task.next_step?.time_estimate || ''}
+                    onPress={() => handleTaskPress(task.id)}
+                  />
+                ))}
+              </View>
+            )}
           </View>
         </View>
       </View>
@@ -125,5 +153,20 @@ const styles = StyleSheet.create({
   cardsContainer: {
     width: '100%',
     paddingTop: 16,
+  },
+  loadingContainer: {
+    width: '100%',
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    width: '100%',
+    paddingTop: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: colors.gray.light[500],
+    fontSize: typography.body.medium.fontSize,
+    fontFamily: typography.body.medium.fontFamily,
   },
 });

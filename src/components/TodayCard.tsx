@@ -6,6 +6,7 @@ import {Chip} from './Chip';
 import {colors, typography} from '../theme/tokens';
 
 interface TodayCardProps {
+  taskId?: string;
   taskName: string;
   totalSteps: number;
   completedSteps: number;
@@ -17,6 +18,7 @@ interface TodayCardProps {
 }
 
 export const TodayCard: React.FC<TodayCardProps> = ({
+  taskId,
   taskName,
   totalSteps,
   completedSteps,

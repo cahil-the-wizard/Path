@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Animated,
   ScrollView,
+  Alert,
 } from 'react-native';
 import {
   CirclePlus,
@@ -14,9 +15,12 @@ import {
   Calendar,
   PanelLeftClose,
   PanelLeftOpen,
+  LogOut,
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
 import {colors, typography} from '../theme/tokens';
+import {authService} from '../services/auth';
+import {useNavigate} from 'react-router-dom';
 
 interface AddTaskButtonProps {
   collapsed: boolean;
@@ -62,8 +66,10 @@ interface NavbarProps {
 export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredOnLogo, setHoveredOnLogo] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const widthAnim = useRef(new Animated.Value(240)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
+  const navigate = useNavigate();
 
   const tasks: Task[] = [
     {id: '1', label: 'Write Blog Post'},
@@ -71,6 +77,16 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
     {id: '3', label: 'Discover Your App Idea'},
     {id: '4', label: 'Job Application'},
   ];
+
+  const handleLogout = async () => {
+    try {
+      await authService.signOut();
+      setShowProfileMenu(false);
+      navigate('/auth');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to sign out');
+    }
+  };
 
   const toggleCollapse = () => {
     const toValue = collapsed ? 240 : 60;
@@ -213,25 +229,41 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
         </Animated.View>
 
         {/* User Profile */}
-        <Animated.View style={{opacity: opacityAnim}}>
-          {!collapsed && (
-            <View style={styles.userProfile}>
+        <View style={styles.profileContainer}>
+          <Animated.View style={{opacity: opacityAnim}}>
+            {!collapsed && (
+              <TouchableOpacity
+                style={styles.userProfile}
+                onPress={() => setShowProfileMenu(!showProfileMenu)}>
+                <Image
+                  source={{uri: 'https://via.placeholder.com/34'}}
+                  style={styles.avatar}
+                />
+                <Text style={styles.userName}>Cahil Sankar</Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+          {collapsed && (
+            <TouchableOpacity
+              style={styles.userProfileCollapsed}
+              onPress={() => setShowProfileMenu(!showProfileMenu)}>
               <Image
                 source={{uri: 'https://via.placeholder.com/34'}}
                 style={styles.avatar}
               />
-              <Text style={styles.userName}>Cahil Sankar</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Profile Menu Popover */}
+          {showProfileMenu && (
+            <View style={[styles.profileMenu, collapsed && styles.profileMenuCollapsed]}>
+              <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+                <LogOut size={16} color={colors.gray.light[700]} strokeWidth={1.5} />
+                <Text style={styles.menuItemText}>Sign out</Text>
+              </TouchableOpacity>
             </View>
           )}
-        </Animated.View>
-        {collapsed && (
-          <View style={styles.userProfileCollapsed}>
-            <Image
-              source={{uri: 'https://via.placeholder.com/34'}}
-              style={styles.avatar}
-            />
-          </View>
-        )}
+        </View>
       </View>
     </Animated.View>
   );
@@ -361,11 +393,17 @@ const styles = StyleSheet.create({
   tasksList: {
     flex: 1,
   },
+  profileContainer: {
+    position: 'relative',
+  },
   userProfile: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 8,
+    cursor: 'pointer',
   },
   userProfileCollapsed: {
     position: 'absolute',
@@ -374,6 +412,9 @@ const styles = StyleSheet.create({
     right: 8,
     alignItems: 'center',
     paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderRadius: 8,
+    cursor: 'pointer',
   },
   avatar: {
     width: 34,
@@ -387,5 +428,41 @@ const styles = StyleSheet.create({
     fontFamily: typography.body.base.fontFamily,
     fontWeight: String(typography.body.base.fontWeight) as any,
     lineHeight: typography.body.base.lineHeight,
+  },
+  profileMenu: {
+    position: 'absolute',
+    bottom: 60,
+    left: 8,
+    right: 8,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.gray.light[200],
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    paddingVertical: 4,
+  },
+  profileMenuCollapsed: {
+    left: 60,
+    right: 'auto',
+    width: 160,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    cursor: 'pointer',
+  },
+  menuItemText: {
+    color: colors.gray.light[700],
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    fontWeight: String(typography.body.small.fontWeight) as any,
+    lineHeight: typography.body.small.lineHeight,
   },
 });
