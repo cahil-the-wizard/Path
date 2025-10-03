@@ -8,7 +8,7 @@ import {TaskDetail} from './src/pages/TaskDetail';
 type Page = 'today' | 'calendar' | 'newTask' | 'taskDetail';
 
 function App(): React.JSX.Element {
-  const [currentPage, setCurrentPage] = useState<Page>('taskDetail');
+  const [currentPage, setCurrentPage] = useState<Page>('today');
 
   const renderPage = () => {
     switch (currentPage) {
