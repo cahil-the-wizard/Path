@@ -40,13 +40,16 @@ class ApiClient {
 
   private getHeaders(): HeadersInit {
     const headers: HeadersInit = {
-      'Authorization': `Bearer ${this.anonKey}`,
       'apikey': this.anonKey,
       'Content-Type': 'application/json',
     };
 
+    // Use JWT token in Authorization header (not x-session-token)
     if (this.sessionToken) {
-      headers['x-session-token'] = this.sessionToken;
+      headers['Authorization'] = `Bearer ${this.sessionToken}`;
+    } else {
+      // Fallback to anon key if no session
+      headers['Authorization'] = `Bearer ${this.anonKey}`;
     }
 
     return headers;
@@ -67,6 +70,10 @@ class ApiClient {
       method: options.method || 'GET',
       hasSessionToken: !!this.sessionToken,
       sessionTokenPreview: this.sessionToken ? this.sessionToken.substring(0, 20) + '...' : 'none',
+      headers: {
+        Authorization: headers['Authorization'],
+        apikey: headers['apikey']?.substring(0, 20) + '...',
+      }
     });
 
     const response = await fetch(url, {
@@ -75,14 +82,19 @@ class ApiClient {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        error: 'An unknown error occurred',
-      }));
+      const errorText = await response.text();
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { error: errorText || 'An unknown error occurred' };
+      }
       console.error('API Error:', {
         status: response.status,
         error,
+        errorText,
       });
-      throw new Error(error.error || `HTTP ${response.status}`);
+      throw new Error(error.error || error.message || `HTTP ${response.status}`);
     }
 
     return response.json();

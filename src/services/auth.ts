@@ -67,60 +67,15 @@ class AuthService {
 
     const authData: SupabaseAuthResponse = await response.json();
 
-    // Create a user_sessions entry to get a proper session token
-    const sessionResponse = await fetch(`${this.supabaseUrl}/rest/v1/rpc/create_user_session`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': API_CONFIG.anonKey,
-        'Authorization': `Bearer ${authData.access_token}`,
-      },
-      body: JSON.stringify({}),
-    });
-
-    let sessionToken: string;
-
-    if (sessionResponse.ok) {
-      const sessionData = await sessionResponse.json();
-      sessionToken = sessionData.session_token || authData.access_token;
-      console.log('Created user session:', sessionToken.substring(0, 20) + '...');
-    } else {
-      // Fallback: try to insert directly into user_sessions
-      console.warn('RPC failed, trying direct insert');
-      const insertResponse = await fetch(`${this.supabaseUrl}/rest/v1/user_sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': API_CONFIG.anonKey,
-          'Authorization': `Bearer ${authData.access_token}`,
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify({
-          user_id: authData.user.id,
-          is_active: true,
-          expires_at: new Date(authData.expires_at * 1000).toISOString(),
-        }),
-      });
-
-      if (insertResponse.ok) {
-        const [sessionData] = await insertResponse.json();
-        sessionToken = sessionData.session_token;
-        console.log('Inserted user session:', sessionToken.substring(0, 20) + '...');
-      } else {
-        const insertError = await insertResponse.json();
-        console.error('Failed to create session:', insertError);
-        // Last resort: use JWT
-        sessionToken = authData.access_token;
-      }
-    }
-
+    // Use the Supabase JWT directly - no custom session needed!
     const session: AuthSession = {
-      sessionToken,
+      sessionToken: authData.access_token,
       userId: authData.user.id,
       expiresAt: new Date(authData.expires_at * 1000).toISOString(),
     };
 
     this.setSession(session);
+    console.log('Sign up successful, JWT token set');
     return session;
   }
 
@@ -147,61 +102,15 @@ class AuthService {
 
     const authData: SupabaseAuthResponse = await response.json();
 
-    // Create a user_sessions entry to get a proper session token
-    const sessionResponse = await fetch(`${this.supabaseUrl}/rest/v1/rpc/create_user_session`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': API_CONFIG.anonKey,
-        'Authorization': `Bearer ${authData.access_token}`,
-      },
-      body: JSON.stringify({}),
-    });
-
-    let sessionToken: string;
-
-    if (sessionResponse.ok) {
-      const sessionData = await sessionResponse.json();
-      sessionToken = sessionData.session_token || authData.access_token;
-      console.log('Created user session:', sessionToken.substring(0, 20) + '...');
-    } else {
-      // Fallback: try to insert directly into user_sessions
-      console.warn('RPC failed, trying direct insert');
-      const insertResponse = await fetch(`${this.supabaseUrl}/rest/v1/user_sessions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': API_CONFIG.anonKey,
-          'Authorization': `Bearer ${authData.access_token}`,
-          'Prefer': 'return=representation',
-        },
-        body: JSON.stringify({
-          user_id: authData.user.id,
-          is_active: true,
-          expires_at: new Date(authData.expires_at * 1000).toISOString(),
-        }),
-      });
-
-      if (insertResponse.ok) {
-        const [sessionData] = await insertResponse.json();
-        sessionToken = sessionData.session_token;
-        console.log('Inserted user session:', sessionToken.substring(0, 20) + '...');
-      } else {
-        const insertError = await insertResponse.json();
-        console.error('Failed to create session:', insertError);
-        // Last resort: use JWT
-        sessionToken = authData.access_token;
-      }
-    }
-
+    // Use the Supabase JWT directly - no custom session needed!
     const session: AuthSession = {
-      sessionToken,
+      sessionToken: authData.access_token,
       userId: authData.user.id,
       expiresAt: new Date(authData.expires_at * 1000).toISOString(),
     };
 
     this.setSession(session);
-    console.log('Session set with token:', session.sessionToken.substring(0, 20) + '...');
+    console.log('Sign in successful, JWT token set');
     return session;
   }
 
@@ -264,13 +173,16 @@ class AuthService {
       // Check if session is expired
       const expiresAt = new Date(session.expiresAt);
       if (expiresAt <= new Date()) {
+        console.log('Session expired, clearing');
         await this.signOut();
         return;
       }
 
       this.setSession(session);
+      console.log('Session restored from storage');
     } catch (error) {
       // Invalid session data, clear it
+      console.log('Invalid session data, clearing');
       localStorage.removeItem('auth_session');
     }
   }

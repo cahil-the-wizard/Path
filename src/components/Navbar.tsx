@@ -228,6 +228,9 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
           )}
         </Animated.View>
 
+        {/* Spacer for collapsed state */}
+        {collapsed && <View style={{flex: 1}} />}
+
         {/* User Profile */}
         <View style={styles.profileContainer}>
           <Animated.View style={{opacity: opacityAnim}}>
@@ -285,7 +288,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   innerContainerCollapsed: {
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
   },
   header: {
     paddingHorizontal: 12,
@@ -406,10 +409,6 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   },
   userProfileCollapsed: {
-    position: 'absolute',
-    bottom: 20,
-    left: 8,
-    right: 8,
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 8,
