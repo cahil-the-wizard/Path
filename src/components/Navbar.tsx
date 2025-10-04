@@ -22,9 +22,8 @@ import {
 import {NavItem} from './NavItem';
 import {colors, typography} from '../theme/tokens';
 import {authService} from '../services/auth';
-import {apiClient} from '../services/apiClient';
-import {useNavigate} from 'react-router-dom';
-import type {Task} from '../types/backend';
+import {useNavigate, useLocation} from 'react-router-dom';
+import {useTasks} from '../contexts/TasksContext';
 
 interface AddTaskButtonProps {
   collapsed: boolean;
@@ -66,27 +65,20 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredOnLogo, setHoveredOnLogo] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loadingTasks, setLoadingTasks] = useState(false);
   const widthAnim = useRef(new Animated.Value(240)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const navigate = useNavigate();
+  const location = useLocation();
+  const {tasks, isLoading: loadingTasks, refreshTasks} = useTasks();
+
+  // Extract current task ID from URL if on task detail page
+  const currentTaskId = location.pathname.startsWith('/task/')
+    ? location.pathname.split('/task/')[1]
+    : null;
 
   useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
-    setLoadingTasks(true);
-    try {
-      const response = await apiClient.getTasks({ status: 'active', limit: 10 });
-      setTasks(response.tasks);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    } finally {
-      setLoadingTasks(false);
-    }
-  };
+    refreshTasks();
+  }, [refreshTasks]);
 
   const handleLogout = async () => {
     try {
@@ -237,8 +229,8 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                       key={task.id}
                       label={task.title}
                       collapsed={collapsed}
-                      active={false}
-                      onPress={() => onNavigate('taskDetail')}
+                      active={currentTaskId === task.id}
+                      onPress={() => navigate(`/task/${task.id}`)}
                       textOpacity={opacityAnim}
                     />
                   ))

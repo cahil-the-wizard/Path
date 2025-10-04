@@ -9,6 +9,7 @@ import {Auth} from './src/pages/Auth';
 // import {Settings} from './src/pages/Settings';
 import {authService} from './src/services/auth';
 import {colors} from './src/theme/tokens';
+import {TasksProvider} from './src/contexts/TasksContext';
 
 type Page = 'today' | 'calendar' | 'newTask' | 'taskDetail' | 'settings';
 
@@ -59,11 +60,12 @@ function AppContent(): React.JSX.Element {
     );
   }
 
-  const pathToPage: Record<string, Page> = {
-    '/': 'today',
-    '/new-task': 'newTask',
-    '/task': 'taskDetail',
-    '/settings': 'settings',
+  const getPageFromPath = (pathname: string): Page => {
+    if (pathname === '/') return 'today';
+    if (pathname === '/new-task') return 'newTask';
+    if (pathname.startsWith('/task/')) return 'taskDetail';
+    if (pathname === '/settings') return 'settings';
+    return 'today';
   };
 
   const pageToPath: Record<Page, string> = {
@@ -74,7 +76,7 @@ function AppContent(): React.JSX.Element {
     'settings': '/settings',
   };
 
-  const currentPage = pathToPage[location.pathname] || 'today';
+  const currentPage = getPageFromPath(location.pathname);
 
   const handleNavigate = (page: Page) => {
     navigate(pageToPath[page]);
@@ -92,37 +94,38 @@ function AppContent(): React.JSX.Element {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <View style={styles.layout}>
-        <Navbar onNavigate={handleNavigate} currentPage={currentPage} />
-        <View style={styles.mainContent} data-main-content>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute isAuthenticated={isAuthenticated}>
-                  <Today />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/new-task"
-              element={
-                <ProtectedRoute isAuthenticated={isAuthenticated}>
-                  <NewTask />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/task"
-              element={
-                <ProtectedRoute isAuthenticated={isAuthenticated}>
-                  <TaskDetail />
-                </ProtectedRoute>
-              }
-            />
-            {/* <Route
+    <TasksProvider>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.layout}>
+          <Navbar onNavigate={handleNavigate} currentPage={currentPage} />
+          <View style={styles.mainContent} data-main-content>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <Today />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/new-task"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <NewTask />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/task/:taskId"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <TaskDetail />
+                  </ProtectedRoute>
+                }
+              />
+              {/* <Route
               path="/settings"
               element={
                 <ProtectedRoute isAuthenticated={isAuthenticated}>
@@ -130,10 +133,11 @@ function AppContent(): React.JSX.Element {
                 </ProtectedRoute>
               }
             /> */}
-          </Routes>
+            </Routes>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </TasksProvider>
   );
 }
 

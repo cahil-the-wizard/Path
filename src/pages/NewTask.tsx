@@ -3,15 +3,18 @@ import {View, Text, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
+import {TaskGenerationModal} from '../components/TaskGenerationModal';
 import {CirclePlus, Paperclip, Mic, ArrowRight} from 'lucide-react-native';
 import {colors} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
 import {useNavigate} from 'react-router-dom';
+import {useTasks} from '../contexts/TasksContext';
 
 export const NewTask: React.FC = () => {
   const [taskInput, setTaskInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const {refreshTasks, refreshTasksSummary} = useTasks();
 
   const handleCreateTask = async () => {
     if (!taskInput.trim()) {
@@ -30,27 +33,27 @@ export const NewTask: React.FC = () => {
       const queueStatus = await apiClient.pollQueueStatus(createResponse.queue_id);
 
       if (queueStatus.result?.task_id) {
-        // Task created successfully
+        // Task created successfully - refresh all task lists
+        await Promise.all([refreshTasks(), refreshTasksSummary()]);
+
         setTaskInput('');
-        Alert.alert('Success', 'Task created successfully!', [
-          {
-            text: 'OK',
-            onPress: () => navigate('/'),
-          },
-        ]);
+        setIsLoading(false);
+
+        // Navigate to the new task
+        navigate(`/task/${queueStatus.result.task_id}`);
       }
     } catch (error) {
+      setIsLoading(false);
       Alert.alert(
         'Error',
         error instanceof Error ? error.message : 'Failed to create task'
       );
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
+      <TaskGenerationModal visible={isLoading} />
       <PageHeader title="Add task" icon={CirclePlus} />
       <View style={styles.content}>
         <View style={styles.centeredContent}>

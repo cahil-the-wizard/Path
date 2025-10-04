@@ -5,19 +5,15 @@ import {Step} from '../components/Step';
 import {CircleCheckBig} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
-import {useLocation} from 'react-router-dom';
+import {useParams} from 'react-router-dom';
 import type {Task, StepWithMetadata} from '../types/backend';
 
 export const TaskDetail: React.FC = () => {
-  const location = useLocation();
+  const {taskId} = useParams<{taskId: string}>();
   const [task, setTask] = useState<Task | null>(null);
   const [steps, setSteps] = useState<StepWithMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSplitting, setIsSplitting] = useState<string | null>(null);
-
-  // Get task ID from URL query params
-  const searchParams = new URLSearchParams(location.search);
-  const taskId = searchParams.get('id');
 
   useEffect(() => {
     if (taskId) {

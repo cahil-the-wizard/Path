@@ -1,40 +1,22 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {Sun, Timer} from 'lucide-react-native';
 import {TodayCard} from '../components/TodayCard';
 import {colors, typography} from '../theme/tokens';
-import {apiClient} from '../services/apiClient';
 import {useNavigate} from 'react-router-dom';
-import type {TaskSummary} from '../types/backend';
+import {useTasks} from '../contexts/TasksContext';
 
 export const Today: React.FC = () => {
-  const [tasks, setTasks] = useState<TaskSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const {tasksSummary: tasks, isLoading, refreshTasksSummary} = useTasks();
 
   useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
-    setIsLoading(true);
-    try {
-      const response = await apiClient.getTasksSummary();
-      setTasks(response.tasks);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-      // If unauthorized, might need to re-login
-      if (error instanceof Error && error.message.includes('Invalid or expired token')) {
-        console.warn('Session expired, user may need to re-login');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    refreshTasksSummary();
+  }, [refreshTasksSummary]);
 
   const handleTaskPress = (taskId: string) => {
-    navigate(`/task?id=${taskId}`);
+    navigate(`/task/${taskId}`);
   };
 
   const today = new Date();
