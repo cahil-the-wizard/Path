@@ -6,10 +6,11 @@ import {NewTask} from './src/pages/NewTask';
 import {Today} from './src/pages/Today';
 import {TaskDetail} from './src/pages/TaskDetail';
 import {Auth} from './src/pages/Auth';
+// import {Settings} from './src/pages/Settings';
 import {authService} from './src/services/auth';
 import {colors} from './src/theme/tokens';
 
-type Page = 'today' | 'calendar' | 'newTask' | 'taskDetail';
+type Page = 'today' | 'calendar' | 'newTask' | 'taskDetail' | 'settings';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -42,8 +43,11 @@ function AppContent(): React.JSX.Element {
 
   useEffect(() => {
     // Update auth state when location changes
-    setIsAuthenticated(authService.isAuthenticated());
-  }, [location]);
+    const isAuth = authService.isAuthenticated();
+    if (isAuth !== isAuthenticated) {
+      setIsAuthenticated(isAuth);
+    }
+  }, [location, isAuthenticated]);
 
   if (isInitializing) {
     return (
@@ -59,6 +63,7 @@ function AppContent(): React.JSX.Element {
     '/': 'today',
     '/new-task': 'newTask',
     '/task': 'taskDetail',
+    '/settings': 'settings',
   };
 
   const pageToPath: Record<Page, string> = {
@@ -66,6 +71,7 @@ function AppContent(): React.JSX.Element {
     'newTask': '/new-task',
     'taskDetail': '/task',
     'calendar': '/calendar',
+    'settings': '/settings',
   };
 
   const currentPage = pathToPage[location.pathname] || 'today';
@@ -116,6 +122,14 @@ function AppContent(): React.JSX.Element {
                 </ProtectedRoute>
               }
             />
+            {/* <Route
+              path="/settings"
+              element={
+                <ProtectedRoute isAuthenticated={isAuthenticated}>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            /> */}
           </Routes>
         </View>
       </View>

@@ -186,6 +186,39 @@ class AuthService {
       localStorage.removeItem('auth_session');
     }
   }
+
+  /**
+   * Gets user profile data from storage
+   */
+  getUserData(): {name: string; email: string; avatarUrl: string | null} {
+    if (typeof localStorage === 'undefined') {
+      return {name: '', email: '', avatarUrl: null};
+    }
+
+    const storedData = localStorage.getItem('user_profile');
+    if (!storedData) {
+      return {name: '', email: '', avatarUrl: null};
+    }
+
+    try {
+      return JSON.parse(storedData);
+    } catch {
+      return {name: '', email: '', avatarUrl: null};
+    }
+  }
+
+  /**
+   * Updates user profile data in storage
+   */
+  updateUserData(data: Partial<{name: string; email: string; avatarUrl: string}>): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const currentData = this.getUserData();
+    const updatedData = {...currentData, ...data};
+    localStorage.setItem('user_profile', JSON.stringify(updatedData));
+  }
 }
 
 export const authService = new AuthService();

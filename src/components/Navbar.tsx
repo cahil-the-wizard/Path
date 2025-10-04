@@ -8,6 +8,7 @@ import {
   Animated,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   CirclePlus,
@@ -16,11 +17,14 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
+  Settings as SettingsIcon,
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
 import {colors, typography} from '../theme/tokens';
 import {authService} from '../services/auth';
+import {apiClient} from '../services/apiClient';
 import {useNavigate} from 'react-router-dom';
+import type {Task} from '../types/backend';
 
 interface AddTaskButtonProps {
   collapsed: boolean;
@@ -53,11 +57,6 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({collapsed, onPress, active
   );
 };
 
-interface Task {
-  id: string;
-  label: string;
-}
-
 interface NavbarProps {
   onNavigate: (page: 'today' | 'calendar' | 'newTask' | 'taskDetail') => void;
   currentPage: 'today' | 'calendar' | 'newTask' | 'taskDetail';
@@ -67,16 +66,27 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredOnLogo, setHoveredOnLogo] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   const widthAnim = useRef(new Animated.Value(240)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const navigate = useNavigate();
 
-  const tasks: Task[] = [
-    {id: '1', label: 'Write Blog Post'},
-    {id: '2', label: 'Plan Toronto Weekend Getaway'},
-    {id: '3', label: 'Discover Your App Idea'},
-    {id: '4', label: 'Job Application'},
-  ];
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    setLoadingTasks(true);
+    try {
+      const response = await apiClient.getTasks({ status: 'active', limit: 10 });
+      setTasks(response.tasks);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+    } finally {
+      setLoadingTasks(false);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -213,16 +223,26 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                 <Text style={styles.tasksSectionTitle}>Tasks</Text>
               </View>
               <ScrollView style={styles.tasksList}>
-                {tasks.map(task => (
-                  <NavItem
-                    key={task.id}
-                    label={task.label}
-                    collapsed={collapsed}
-                    active={task.id === '4' && currentPage === 'taskDetail'}
-                    onPress={() => task.id === '4' ? onNavigate('taskDetail') : console.log(task.label)}
-                    textOpacity={opacityAnim}
-                  />
-                ))}
+                {loadingTasks ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color={colors.indigo[600]} />
+                  </View>
+                ) : tasks.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>No tasks yet</Text>
+                  </View>
+                ) : (
+                  tasks.map(task => (
+                    <NavItem
+                      key={task.id}
+                      label={task.title}
+                      collapsed={collapsed}
+                      active={false}
+                      onPress={() => onNavigate('taskDetail')}
+                      textOpacity={opacityAnim}
+                    />
+                  ))
+                )}
               </ScrollView>
             </View>
           )}
@@ -260,6 +280,16 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
           {/* Profile Menu Popover */}
           {showProfileMenu && (
             <View style={[styles.profileMenu, collapsed && styles.profileMenuCollapsed]}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowProfileMenu(false);
+                  onNavigate('settings');
+                }}>
+                <SettingsIcon size={16} color={colors.gray.light[700]} strokeWidth={1.5} />
+                <Text style={styles.menuItemText}>Settings</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
               <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
                 <LogOut size={16} color={colors.gray.light[700]} strokeWidth={1.5} />
                 <Text style={styles.menuItemText}>Sign out</Text>
@@ -463,5 +493,23 @@ const styles = StyleSheet.create({
     fontFamily: typography.body.small.fontFamily,
     fontWeight: String(typography.body.small.fontWeight) as any,
     lineHeight: typography.body.small.lineHeight,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: colors.gray.light[200],
+    marginVertical: 4,
+  },
+  loadingContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    color: colors.gray.light[500],
   },
 });

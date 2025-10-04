@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
+import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator';
 import {LogIn} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {authService} from '../services/auth';
@@ -13,6 +14,7 @@ export const Auth: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPasswordStrength, setShowPasswordStrength] = useState(false);
   const navigate = useNavigate();
 
   const handleAuth = async () => {
@@ -34,6 +36,11 @@ export const Auth: React.FC = () => {
           password: password.trim(),
           name: name.trim(),
         });
+        // Save user profile data
+        authService.updateUserData({
+          name: name.trim(),
+          email: email.trim(),
+        });
         Alert.alert('Success', 'Account created! Welcome to Path.', [
           {
             text: 'OK',
@@ -46,7 +53,14 @@ export const Auth: React.FC = () => {
           password: password.trim(),
         });
         console.log('Signed in successfully, session:', session.userId);
-        navigate('/');
+        // Save email to profile data
+        authService.updateUserData({
+          email: email.trim(),
+        });
+        // Small delay to ensure session is fully set before navigation
+        setTimeout(() => {
+          navigate('/');
+        }, 100);
       }
     } catch (error) {
       Alert.alert(
@@ -99,15 +113,26 @@ export const Auth: React.FC = () => {
               />
             </View>
 
-            <View style={styles.inputWrapper}>
+            <View style={[styles.inputWrapper, showPasswordStrength && styles.inputWrapperElevated]}>
               <Text style={styles.label}>Password</Text>
               <TextInput
                 placeholder="Enter your password"
                 value={password}
                 onChangeText={setPassword}
+                onFocus={() => {
+                  if (mode === 'signup' && password.length > 0) {
+                    setShowPasswordStrength(true);
+                  }
+                }}
+                onBlur={() => setShowPasswordStrength(false)}
                 secureTextEntry
                 editable={!isLoading}
               />
+              {showPasswordStrength && mode === 'signup' && (
+                <View style={styles.passwordStrengthPopover}>
+                  <PasswordStrengthIndicator password={password} />
+                </View>
+              )}
             </View>
 
             <Button
@@ -174,6 +199,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
+    overflow: 'visible',
   },
   header: {
     alignItems: 'center',
@@ -195,10 +221,23 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
     gap: 20,
+    overflow: 'visible',
   },
   inputWrapper: {
     width: '100%',
     gap: 8,
+    position: 'relative',
+  },
+  inputWrapperElevated: {
+    zIndex: 100,
+  },
+  passwordStrengthPopover: {
+    position: 'absolute',
+    top: 0,
+    right: '100%',
+    marginRight: 16,
+    width: 340,
+    zIndex: 1000,
   },
   label: {
     fontSize: typography.body.small.fontSize,
