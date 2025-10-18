@@ -15,6 +15,8 @@ export const Auth: React.FC = () => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordStrength, setShowPasswordStrength] = useState(false);
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
   const {signIn, signUp, updateUserData} = useAuth();
 
@@ -32,11 +34,20 @@ export const Auth: React.FC = () => {
     setIsLoading(true);
     try {
       if (mode === 'signup') {
-        await signUp({
+        const result = await signUp({
           email: email.trim(),
           password: password.trim(),
           name: name.trim(),
         });
+
+        // Check if email confirmation is required
+        if (result.requiresEmailConfirmation) {
+          setConfirmationEmail(result.email);
+          setShowEmailConfirmation(true);
+          setIsLoading(false);
+          return;
+        }
+
         // Save user profile data
         updateUserData({
           name: name.trim(),
@@ -70,6 +81,49 @@ export const Auth: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // If showing email confirmation screen
+  if (showEmailConfirmation) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.content}>
+          <View style={styles.card}>
+            <View style={styles.header}>
+              <LogIn size={32} color={colors.indigo[600]} />
+              <Text style={styles.title}>Check your email</Text>
+              <Text style={styles.subtitle}>
+                We've sent a confirmation link to <Text style={styles.emailText}>{confirmationEmail}</Text>
+              </Text>
+            </View>
+
+            <View style={styles.confirmationContent}>
+              <Text style={styles.confirmationText}>
+                Click the link in the email to verify your account and get started with Path.
+              </Text>
+              <Text style={styles.confirmationSubtext}>
+                Didn't receive the email? Check your spam folder or contact support.
+              </Text>
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>Ready to sign in? </Text>
+              <Text
+                style={styles.footerLink}
+                onPress={() => {
+                  setShowEmailConfirmation(false);
+                  setMode('signin');
+                  setEmail('');
+                  setPassword('');
+                  setName('');
+                }}>
+                Sign in
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -262,5 +316,28 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginTop: -48,
+  },
+  emailText: {
+    fontWeight: '600',
+    color: colors.indigo[600],
+  },
+  confirmationContent: {
+    width: '100%',
+    gap: 16,
+    paddingVertical: 24,
+  },
+  confirmationText: {
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    color: colors.gray.light[700],
+    lineHeight: typography.body.base.lineHeight,
+    textAlign: 'center',
+  },
+  confirmationSubtext: {
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    color: colors.gray.light[500],
+    lineHeight: typography.body.small.lineHeight,
+    textAlign: 'center',
   },
 });

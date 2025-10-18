@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useState, useCallback, useEffect, ReactNode} from 'react';
-import {authService, AuthSession, SignInCredentials, SignUpCredentials} from '../services/auth';
+import {authService, AuthSession, SignInCredentials, SignUpCredentials, SignUpResult} from '../services/auth';
 
 interface UserData {
   name: string;
@@ -13,7 +13,7 @@ interface AuthContextValue {
   userData: UserData;
   isInitializing: boolean;
   signIn: (credentials: SignInCredentials) => Promise<AuthSession>;
-  signUp: (credentials: SignUpCredentials) => Promise<AuthSession>;
+  signUp: (credentials: SignUpCredentials) => Promise<SignUpResult>;
   signOut: () => Promise<void>;
   updateUserData: (data: Partial<UserData>) => void;
 }
@@ -58,16 +58,20 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
     return newSession;
   }, []);
 
-  const signUp = useCallback(async (credentials: SignUpCredentials): Promise<AuthSession> => {
-    const newSession = await authService.signUp(credentials);
-    setSession(newSession);
-    setIsAuthenticated(true);
+  const signUp = useCallback(async (credentials: SignUpCredentials): Promise<SignUpResult> => {
+    const result = await authService.signUp(credentials);
 
-    // Update user data
-    const data = authService.getUserData();
-    setUserData(data);
+    // Only set session if email confirmation is not required
+    if (result.session && !result.requiresEmailConfirmation) {
+      setSession(result.session);
+      setIsAuthenticated(true);
 
-    return newSession;
+      // Update user data
+      const data = authService.getUserData();
+      setUserData(data);
+    }
+
+    return result;
   }, []);
 
   const signOut = useCallback(async () => {

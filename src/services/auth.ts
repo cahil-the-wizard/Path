@@ -7,6 +7,12 @@ export interface AuthSession {
   expiresAt: string;
 }
 
+export interface SignUpResult {
+  session?: AuthSession;
+  requiresEmailConfirmation: boolean;
+  email: string;
+}
+
 export interface SignUpCredentials {
   email: string;
   password: string;
@@ -19,15 +25,17 @@ export interface SignInCredentials {
 }
 
 interface SupabaseAuthResponse {
-  access_token: string;
+  access_token?: string;
   token_type: string;
   expires_in: number;
-  expires_at: number;
+  expires_at?: number;
   refresh_token: string;
   user: {
     id: string;
     email: string;
     created_at: string;
+    email_confirmed_at?: string | null;
+    confirmed_at?: string | null;
   };
 }
 
@@ -44,7 +52,7 @@ class AuthService {
   /**
    * Signs up a new user with email and password using Supabase Auth
    */
-  async signUp(credentials: SignUpCredentials): Promise<AuthSession> {
+  async signUp(credentials: SignUpCredentials): Promise<SignUpResult> {
     const response = await fetch(`${this.supabaseUrl}/auth/v1/signup`, {
       method: 'POST',
       headers: {
@@ -67,16 +75,50 @@ class AuthService {
 
     const authData: SupabaseAuthResponse = await response.json();
 
+    // Debug: Log the response to see what Supabase returns
+    console.log('Supabase signup response:', {
+      hasAccessToken: !!authData.access_token,
+      emailConfirmedAt: authData.user.email_confirmed_at,
+      confirmedAt: authData.user.confirmed_at,
+    });
+
+    // Check if email confirmation is required
+    // If access_token is not provided, email confirmation is definitely required
+    if (!authData.access_token) {
+      console.log('Email confirmation required - no access token');
+      return {
+        requiresEmailConfirmation: true,
+        email: credentials.email,
+      };
+    }
+
+    // Check if user hasn't confirmed their email yet
+    const requiresEmailConfirmation =
+      !authData.user.email_confirmed_at &&
+      !authData.user.confirmed_at;
+
+    if (requiresEmailConfirmation) {
+      console.log('Email confirmation required - email not confirmed');
+      return {
+        requiresEmailConfirmation: true,
+        email: credentials.email,
+      };
+    }
+
     // Use the Supabase JWT directly - no custom session needed!
     const session: AuthSession = {
       sessionToken: authData.access_token,
       userId: authData.user.id,
-      expiresAt: new Date(authData.expires_at * 1000).toISOString(),
+      expiresAt: new Date(authData.expires_at! * 1000).toISOString(),
     };
 
     this.setSession(session);
     console.log('Sign up successful, JWT token set');
-    return session;
+    return {
+      session,
+      requiresEmailConfirmation: false,
+      email: credentials.email,
+    };
   }
 
   /**
