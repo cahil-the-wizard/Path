@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {SafeAreaView, StatusBar, StyleSheet, View, ActivityIndicator} from 'react-native';
 import {BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate} from 'react-router-dom';
 import {Navbar} from './src/components/Navbar';
@@ -7,9 +7,9 @@ import {Today} from './src/pages/Today';
 import {TaskDetail} from './src/pages/TaskDetail';
 import {Auth} from './src/pages/Auth';
 // import {Settings} from './src/pages/Settings';
-import {authService} from './src/services/auth';
 import {colors} from './src/theme/tokens';
 import {TasksProvider} from './src/contexts/TasksContext';
+import {AuthProvider, useAuth} from './src/contexts/AuthContext';
 
 type Page = 'today' | 'calendar' | 'newTask' | 'taskDetail' | 'settings';
 
@@ -25,30 +25,7 @@ function ProtectedRoute({children, isAuthenticated}: ProtectedRouteProps): React
 function AppContent(): React.JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(true);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      try {
-        await authService.restoreSession();
-        setIsAuthenticated(authService.isAuthenticated());
-      } catch (error) {
-        console.error('Failed to restore session:', error);
-      } finally {
-        setIsInitializing(false);
-      }
-    };
-    initAuth();
-  }, []);
-
-  useEffect(() => {
-    // Update auth state when location changes
-    const isAuth = authService.isAuthenticated();
-    if (isAuth !== isAuthenticated) {
-      setIsAuthenticated(isAuth);
-    }
-  }, [location, isAuthenticated]);
+  const {isAuthenticated, isInitializing} = useAuth();
 
   if (isInitializing) {
     return (
@@ -144,7 +121,9 @@ function AppContent(): React.JSX.Element {
 function App(): React.JSX.Element {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

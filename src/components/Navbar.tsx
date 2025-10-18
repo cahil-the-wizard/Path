@@ -21,7 +21,7 @@ import {
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
 import {colors, typography} from '../theme/tokens';
-import {authService} from '../services/auth';
+import {useAuth} from '../contexts/AuthContext';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {useTasks} from '../contexts/TasksContext';
 
@@ -70,6 +70,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const {tasks, isLoading: loadingTasks, refreshTasks} = useTasks();
+  const {signOut} = useAuth();
 
   // Extract current task ID from URL if on task detail page
   const currentTaskId = location.pathname.startsWith('/task/')
@@ -82,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
 
   const handleLogout = async () => {
     try {
-      await authService.signOut();
+      await signOut();
       setShowProfileMenu(false);
       navigate('/auth');
     } catch (error) {

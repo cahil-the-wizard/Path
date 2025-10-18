@@ -5,7 +5,7 @@ import {Button} from '../components/Button';
 import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator';
 import {LogIn} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
-import {authService} from '../services/auth';
+import {useAuth} from '../contexts/AuthContext';
 import {useNavigate} from 'react-router-dom';
 
 export const Auth: React.FC = () => {
@@ -16,6 +16,7 @@ export const Auth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPasswordStrength, setShowPasswordStrength] = useState(false);
   const navigate = useNavigate();
+  const {signIn, signUp, updateUserData} = useAuth();
 
   const handleAuth = async () => {
     if (!email.trim() || !password.trim()) {
@@ -31,13 +32,13 @@ export const Auth: React.FC = () => {
     setIsLoading(true);
     try {
       if (mode === 'signup') {
-        await authService.signUp({
+        await signUp({
           email: email.trim(),
           password: password.trim(),
           name: name.trim(),
         });
         // Save user profile data
-        authService.updateUserData({
+        updateUserData({
           name: name.trim(),
           email: email.trim(),
         });
@@ -48,19 +49,17 @@ export const Auth: React.FC = () => {
           },
         ]);
       } else {
-        const session = await authService.signIn({
+        const session = await signIn({
           email: email.trim(),
           password: password.trim(),
         });
         console.log('Signed in successfully, session:', session.userId);
         // Save email to profile data
-        authService.updateUserData({
+        updateUserData({
           email: email.trim(),
         });
-        // Small delay to ensure session is fully set before navigation
-        setTimeout(() => {
-          navigate('/');
-        }, 100);
+        // Navigate immediately - auth state is now synchronized!
+        navigate('/');
       }
     } catch (error) {
       Alert.alert(
