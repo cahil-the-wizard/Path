@@ -18,6 +18,7 @@ import type {
   SplitStepRequest,
   GetTasksParams,
   GetTaskStepsParams,
+  GetTasksSummaryParams,
 } from '../types/backend';
 
 class ApiClient {
@@ -110,6 +111,7 @@ class ApiClient {
 
   async getTasks(params?: GetTasksParams): Promise<GetTasksResponse> {
     const queryParams = new URLSearchParams();
+    if (params?.user_id) queryParams.append('user_id', params.user_id);
     if (params?.status) queryParams.append('status', params.status);
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.offset) queryParams.append('offset', params.offset.toString());
@@ -207,8 +209,14 @@ class ApiClient {
   }
 
   // Summary operations
-  async getTasksSummary(): Promise<GetTasksSummaryResponse> {
-    return this.request<GetTasksSummaryResponse>(API_ENDPOINTS.getTasksSummary);
+  async getTasksSummary(params?: GetTasksSummaryParams): Promise<GetTasksSummaryResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.user_id) queryParams.append('user_id', params.user_id);
+
+    const query = queryParams.toString();
+    const endpoint = query ? `${API_ENDPOINTS.getTasksSummary}?${query}` : API_ENDPOINTS.getTasksSummary;
+
+    return this.request<GetTasksSummaryResponse>(endpoint);
   }
 }
 

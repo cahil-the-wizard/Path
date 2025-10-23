@@ -1,6 +1,6 @@
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
-import {Check, Circle} from 'lucide-react-native';
+import {View, Text, StyleSheet, ActivityIndicator} from 'react-native';
+import {Check, Circle, BetweenHorizontalStart} from 'lucide-react-native';
 import {Button} from './Button';
 import {colors, typography} from '../theme/tokens';
 
@@ -51,14 +51,21 @@ export const Step: React.FC<StepProps> = ({
           )}
           {onSplit && !completed && (
             <View style={styles.buttonContainer}>
-              <Button
-                variant="tertiary"
-                size="small"
-                label={isSplitting ? 'Splitting...' : 'Split'}
-                leftIcon={Circle}
-                onPress={onSplit}
-                disabled={isSplitting}
-              />
+              {isSplitting ? (
+                <View style={styles.splittingButton}>
+                  <ActivityIndicator size="small" color={colors.gray.light[950]} />
+                  <Text style={styles.splittingText}>Splitting...</Text>
+                </View>
+              ) : (
+                <Button
+                  variant="tertiary"
+                  size="small"
+                  label="Split"
+                  leftIcon={BetweenHorizontalStart}
+                  onPress={onSplit}
+                  disabled={isSplitting}
+                />
+              )}
             </View>
           )}
         </View>
@@ -128,10 +135,26 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     paddingTop: 4,
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: 10,
+  },
+  splittingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.gray.light[100],
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 38,
+  },
+  splittingText: {
+    color: colors.gray.light[950],
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    fontWeight: String(typography.body.base.fontWeight) as any,
+    lineHeight: typography.body.base.lineHeight,
   },
   divider: {
     alignSelf: 'stretch',

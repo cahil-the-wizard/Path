@@ -134,6 +134,7 @@ export interface SplitStepRequest {
 }
 
 export interface GetTasksParams {
+  user_id?: string;
   status?: TaskStatus;
   limit?: number;
   offset?: number;
@@ -141,4 +142,8 @@ export interface GetTasksParams {
 
 export interface GetTaskStepsParams {
   include_metadata?: boolean;
+}
+
+export interface GetTasksSummaryParams {
+  user_id?: string;
 }

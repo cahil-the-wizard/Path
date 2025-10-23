@@ -1,6 +1,7 @@
 import React, {createContext, useContext, useState, useCallback, ReactNode} from 'react';
 import {apiClient} from '../services/apiClient';
 import type {Task, TaskSummary} from '../types/backend';
+import {useAuth} from './AuthContext';
 
 interface TasksContextValue {
   tasks: Task[];
@@ -13,33 +14,48 @@ interface TasksContextValue {
 const TasksContext = createContext<TasksContextValue | undefined>(undefined);
 
 export const TasksProvider: React.FC<{children: ReactNode}> = ({children}) => {
+  const {session} = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksSummary, setTasksSummary] = useState<TaskSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   const refreshTasks = useCallback(async () => {
+    if (!session?.userId) {
+      console.warn('No user session available, skipping task refresh');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await apiClient.getTasks({status: 'active', limit: 10});
+      const response = await apiClient.getTasks({
+        user_id: session.userId,
+        status: 'active',
+        limit: 10
+      });
       setTasks(response.tasks);
     } catch (error) {
       console.error('Failed to refresh tasks:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [session?.userId]);
 
   const refreshTasksSummary = useCallback(async () => {
+    if (!session?.userId) {
+      console.warn('No user session available, skipping tasks summary refresh');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await apiClient.getTasksSummary();
+      const response = await apiClient.getTasksSummary({user_id: session.userId});
       setTasksSummary(response.tasks);
     } catch (error) {
       console.error('Failed to refresh tasks summary:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [session?.userId]);
 
   return (
     <TasksContext.Provider

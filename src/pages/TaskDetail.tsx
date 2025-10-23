@@ -156,11 +156,7 @@ export const TaskDetail: React.FC = () => {
                     description={step.description}
                     completed={step.is_completed}
                     onToggle={() => handleToggleStep(step.id, step.is_completed)}
-                    onSplit={
-                      !step.is_completed && isSplitting !== step.id
-                        ? () => handleSplitStep(step.id)
-                        : undefined
-                    }
+                    onSplit={() => handleSplitStep(step.id)}
                     isSplitting={isSplitting === step.id}
                   />
                 ))
