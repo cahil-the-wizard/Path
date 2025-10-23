@@ -26,16 +26,23 @@ export interface SignInCredentials {
 
 interface SupabaseAuthResponse {
   access_token?: string;
-  token_type: string;
-  expires_in: number;
+  token_type?: string;
+  expires_in?: number;
   expires_at?: number;
-  refresh_token: string;
-  user: {
+  refresh_token?: string;
+  user?: {
     id: string;
     email: string;
     created_at: string;
     email_confirmed_at?: string | null;
     confirmed_at?: string | null;
+  };
+  // When email confirmation is required, response is just the user object
+  id?: string;
+  email?: string;
+  confirmation_sent_at?: string;
+  user_metadata?: {
+    email_verified?: boolean;
   };
 }
 
@@ -75,40 +82,36 @@ class AuthService {
 
     const authData: SupabaseAuthResponse = await response.json();
 
-    // Debug: Log the response to see what Supabase returns
-    console.log('Supabase signup response:', {
-      hasAccessToken: !!authData.access_token,
-      emailConfirmedAt: authData.user.email_confirmed_at,
-      confirmedAt: authData.user.confirmed_at,
-    });
+    // Debug: Log the full response to understand Supabase's behavior
+    console.log('Supabase signup response:', JSON.stringify(authData, null, 2));
+    console.log('Response keys:', Object.keys(authData));
+    console.log('Has access_token:', !!authData.access_token);
+    console.log('Has confirmation_sent_at:', !!authData.confirmation_sent_at);
+    console.log('User object:', authData.user);
 
-    // Check if email confirmation is required
-    // If access_token is not provided, email confirmation is definitely required
-    if (!authData.access_token) {
-      console.log('Email confirmation required - no access token');
+    // When email confirmation is required, Supabase returns different response structures:
+    // 1. No access_token in response
+    // 2. confirmation_sent_at field present
+    // 3. User object with identities array empty (unconfirmed)
+    const requiresConfirmation = !authData.access_token ||
+                                  authData.confirmation_sent_at !== undefined ||
+                                  (authData.user && !authData.user.email_confirmed_at);
+
+    console.log('Requires confirmation:', requiresConfirmation);
+
+    if (requiresConfirmation) {
+      console.log('Email confirmation required - confirmation email sent');
       return {
         requiresEmailConfirmation: true,
         email: credentials.email,
       };
     }
 
-    // Check if user hasn't confirmed their email yet
-    const requiresEmailConfirmation =
-      !authData.user.email_confirmed_at &&
-      !authData.user.confirmed_at;
-
-    if (requiresEmailConfirmation) {
-      console.log('Email confirmation required - email not confirmed');
-      return {
-        requiresEmailConfirmation: true,
-        email: credentials.email,
-      };
-    }
-
+    // At this point, we have access_token and user data
     // Use the Supabase JWT directly - no custom session needed!
     const session: AuthSession = {
       sessionToken: authData.access_token,
-      userId: authData.user.id,
+      userId: authData.user!.id,
       expiresAt: new Date(authData.expires_at! * 1000).toISOString(),
     };
 
