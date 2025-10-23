@@ -6,10 +6,12 @@ import {CircleCheckBig} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
 import {useParams} from 'react-router-dom';
+import {useAuth} from '../contexts/AuthContext';
 import type {Task, StepWithMetadata} from '../types/backend';
 
 export const TaskDetail: React.FC = () => {
   const {taskId} = useParams<{taskId: string}>();
+  const {session} = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   const [steps, setSteps] = useState<StepWithMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,10 +26,16 @@ export const TaskDetail: React.FC = () => {
   }, [taskId]);
 
   const loadTaskDetails = async (id: string) => {
+    if (!session?.userId) {
+      Alert.alert('Error', 'Please sign in to view task details');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const [tasksResponse, stepsResponse] = await Promise.all([
-        apiClient.getTasks(),
+        apiClient.getTasks({user_id: session.userId}),
         apiClient.getTaskSteps(id),
       ]);
 
