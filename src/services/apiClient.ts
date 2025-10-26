@@ -132,6 +132,18 @@ class ApiClient {
     });
   }
 
+  async deleteTask(taskId: string): Promise<{success: boolean}> {
+    return this.request<{success: boolean}>(API_ENDPOINTS.deleteTask(taskId), {
+      method: 'DELETE',
+    });
+  }
+
+  async duplicateTask(taskId: string): Promise<CreateTaskResponse> {
+    return this.request<CreateTaskResponse>(API_ENDPOINTS.duplicateTask(taskId), {
+      method: 'POST',
+    });
+  }
+
   // Step operations
   async getTaskSteps(
     taskId: string,

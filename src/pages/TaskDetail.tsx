@@ -2,23 +2,31 @@ import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {Step} from '../components/Step';
-import {CircleCheckBig} from 'lucide-react-native';
+import {Button} from '../components/Button';
+import {Dropdown, DropdownItem} from '../components/Dropdown';
+import {ConfirmationModal} from '../components/ConfirmationModal';
+import {CircleCheckBig, MoreHorizontal, Copy, Edit, Trash2} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
-import {useParams} from 'react-router-dom';
+import {useParams, useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
+import {useTasks} from '../contexts/TasksContext';
 import type {Task, StepWithMetadata} from '../types/backend';
-import {getTaskIdFromSlug} from '../utils/slug';
+import {getTaskIdFromSlug, generateTaskSlug} from '../utils/slug';
 
 export const TaskDetail: React.FC = () => {
   const {taskSlug} = useParams<{taskSlug: string}>();
   // Extract task ID prefix from the slug (last 8 chars)
   const taskIdPrefix = taskSlug ? getTaskIdFromSlug(taskSlug) : undefined;
   const {session} = useAuth();
+  const navigate = useNavigate();
+  const {refreshTasks, refreshTasksSummary} = useTasks();
   const [task, setTask] = useState<Task | null>(null);
   const [steps, setSteps] = useState<StepWithMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSplitting, setIsSplitting] = useState<string | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
@@ -127,6 +135,86 @@ export const TaskDetail: React.FC = () => {
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!task) return;
+
+    try {
+      const response = await apiClient.duplicateTask(task.id);
+
+      // Poll for completion
+      const queueStatus = await apiClient.pollQueueStatus(response.queue_id);
+
+      if (queueStatus.result?.task_id) {
+        // Refresh task lists
+        await Promise.all([refreshTasks(), refreshTasksSummary()]);
+
+        // Navigate to the duplicated task
+        const tasksResponse = await apiClient.getTasks({user_id: session?.userId});
+        const duplicatedTask = tasksResponse.tasks.find(t => t.id === queueStatus.result.task_id);
+
+        if (duplicatedTask) {
+          const slug = generateTaskSlug(duplicatedTask.title, duplicatedTask.id);
+          navigate(`/task/${slug}`);
+        }
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to duplicate task'
+      );
+    }
+  };
+
+  const handleEdit = () => {
+    // Placeholder for edit functionality
+    Alert.alert('Edit Task', 'Edit functionality coming soon');
+  };
+
+  const handleDelete = async () => {
+    if (!task) return;
+
+    console.log('handleDelete called for task:', task.id);
+
+    try {
+      console.log('Calling deleteTask API...');
+      await apiClient.deleteTask(task.id);
+      console.log('Task deleted successfully');
+
+      // Refresh task lists
+      console.log('Refreshing task lists...');
+      await Promise.all([refreshTasks(), refreshTasksSummary()]);
+
+      // Navigate back to today page
+      console.log('Navigating to home...');
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to delete task'
+      );
+    }
+  };
+
+  const dropdownItems: DropdownItem[] = [
+    {
+      label: 'Duplicate',
+      icon: Copy,
+      onPress: handleDuplicate,
+    },
+    {
+      label: 'Edit',
+      icon: Edit,
+      onPress: handleEdit,
+    },
+    {
+      label: 'Delete',
+      icon: Trash2,
+      onPress: () => setShowDeleteModal(true),
+      variant: 'destructive',
+    },
+  ];
+
   const completedCount = steps.filter(s => s.is_completed).length;
   const totalCount = steps.length;
 
@@ -171,7 +259,36 @@ export const TaskDetail: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <PageHeader title={task.title} icon={CircleCheckBig} showBorderOnScroll={true} />
+      <PageHeader
+        title={task.title}
+        icon={CircleCheckBig}
+        showBorderOnScroll={true}
+        actions={
+          <Button
+            variant="ghost"
+            size="small"
+            label=""
+            leftIcon={MoreHorizontal}
+            onPress={() => setShowDropdown(!showDropdown)}
+          />
+        }
+      />
+      <Dropdown
+        items={dropdownItems}
+        visible={showDropdown}
+        onClose={() => setShowDropdown(false)}
+        align="right"
+      />
+      <ConfirmationModal
+        visible={showDeleteModal}
+        title="Delete Task"
+        message={`Are you sure you want to delete "${task.title}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
       <View style={styles.content}>
         <View style={styles.centeredContent}>
           <View style={styles.body}>

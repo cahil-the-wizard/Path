@@ -7,6 +7,8 @@ export const API_ENDPOINTS = {
   createTask: '/create-task',
   getTasks: '/get-tasks',
   updateTask: (taskId: string) => `/update-task/${taskId}`,
+  deleteTask: (taskId: string) => `/delete-task/${taskId}`,
+  duplicateTask: (taskId: string) => `/duplicate-task/${taskId}`,
   getTaskSteps: (taskId: string) => `/get-task-steps/${taskId}`,
   updateStep: (stepId: string) => `/update-step/${stepId}`,
   addStep: '/add-step',

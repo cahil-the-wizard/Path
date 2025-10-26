@@ -18,9 +18,11 @@ export type ButtonVariant =
   | 'tertiary'
   | 'tertiary-hover'
   | 'ghost'
-  | 'ghost-hover';
+  | 'ghost-hover'
+  | 'destructive'
+  | 'destructive-pressed';
 
-export type ButtonSize = 'large' | 'small';
+export type ButtonSize = 'large' | 'medium' | 'small';
 
 interface ButtonProps {
   variant?: ButtonVariant;
@@ -84,6 +86,8 @@ const getHoverVariant = (variant: ButtonVariant): ButtonVariant => {
       return 'tertiary-hover';
     case 'ghost':
       return 'ghost-hover';
+    case 'destructive':
+      return 'destructive-pressed';
     default:
       return variant;
   }
@@ -108,8 +112,8 @@ const getButtonStyles = (
     lineHeight: typography.body.base.lineHeight,
   };
 
-  const padding = size === 'large' ? 12 : 8;
-  const iconOnlySize = size === 'large' ? 42 : 34;
+  const padding = size === 'large' ? 12 : size === 'medium' ? 10 : 8;
+  const iconOnlySize = size === 'large' ? 42 : size === 'medium' ? 38 : 34;
 
   const iconOnlyContainer: ViewStyle = {
     width: iconOnlySize,
@@ -232,6 +236,34 @@ const getButtonStyles = (
         },
         iconOnlyContainer,
       };
+    case 'destructive':
+      return {
+        container: {
+          ...baseContainer,
+          backgroundColor: colors.red[600],
+          paddingVertical: padding,
+          paddingHorizontal: 12,
+        },
+        text: {
+          ...baseText,
+          color: '#FFFFFF',
+        },
+        iconOnlyContainer,
+      };
+    case 'destructive-pressed':
+      return {
+        container: {
+          ...baseContainer,
+          backgroundColor: colors.red[700],
+          paddingVertical: padding,
+          paddingHorizontal: 12,
+        },
+        text: {
+          ...baseText,
+          color: '#FFFFFF',
+        },
+        iconOnlyContainer,
+      };
     default:
       return {
         container: {
@@ -253,6 +285,8 @@ const getIconColor = (variant: ButtonVariant): string => {
   switch (variant) {
     case 'primary':
     case 'primary-pressed':
+    case 'destructive':
+    case 'destructive-pressed':
       return '#FFFFFF';
     case 'secondary':
     case 'secondary-disabled':
