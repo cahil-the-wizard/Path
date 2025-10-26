@@ -8,9 +8,12 @@ import {apiClient} from '../services/apiClient';
 import {useParams} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import type {Task, StepWithMetadata} from '../types/backend';
+import {getTaskIdFromSlug} from '../utils/slug';
 
 export const TaskDetail: React.FC = () => {
-  const {taskId} = useParams<{taskId: string}>();
+  const {taskSlug} = useParams<{taskSlug: string}>();
+  // Extract task ID prefix from the slug (last 8 chars)
+  const taskIdPrefix = taskSlug ? getTaskIdFromSlug(taskSlug) : undefined;
   const {session} = useAuth();
   const [task, setTask] = useState<Task | null>(null);
   const [steps, setSteps] = useState<StepWithMetadata[]>([]);
@@ -18,15 +21,22 @@ export const TaskDetail: React.FC = () => {
   const [isSplitting, setIsSplitting] = useState<string | null>(null);
 
   useEffect(() => {
-    if (taskId) {
-      loadTaskDetails(taskId);
+    console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
+    if (taskIdPrefix && session?.userId) {
+      loadTaskDetails(taskIdPrefix);
+    } else if (taskIdPrefix && !session?.userId) {
+      console.log('Waiting for session...');
+      // Session not ready yet, keep loading state
     } else {
       setIsLoading(false);
     }
-  }, [taskId]);
+  }, [taskIdPrefix, session?.userId]);
 
-  const loadTaskDetails = async (id: string) => {
+  const loadTaskDetails = async (idPrefix: string) => {
+    console.log('loadTaskDetails called with:', { idPrefix, userId: session?.userId });
+
     if (!session?.userId) {
+      console.error('No session userId available');
       Alert.alert('Error', 'Please sign in to view task details');
       setIsLoading(false);
       return;
@@ -34,17 +44,31 @@ export const TaskDetail: React.FC = () => {
 
     try {
       setIsLoading(true);
-      const [tasksResponse, stepsResponse] = await Promise.all([
-        apiClient.getTasks({user_id: session.userId}),
-        apiClient.getTaskSteps(id, {include_metadata: true}),
-      ]);
+      // First, get all tasks to find the full ID
+      console.log('Fetching tasks...');
+      const tasksResponse = await apiClient.getTasks({user_id: session.userId});
+      console.log('Tasks fetched:', tasksResponse.tasks.length, 'tasks');
 
-      const currentTask = tasksResponse.tasks.find(t => t.id === id);
-      if (currentTask) {
-        setTask(currentTask);
+      const currentTask = tasksResponse.tasks.find(t => t.id.startsWith(idPrefix));
+      console.log('Looking for task with ID prefix:', idPrefix);
+      console.log('Found task:', currentTask);
+
+      if (!currentTask) {
+        console.error('Task not found with prefix:', idPrefix);
+        Alert.alert('Error', 'Task not found');
+        setIsLoading(false);
+        return;
       }
+
+      // Now fetch steps using the full ID
+      console.log('Fetching steps for task:', currentTask.id);
+      const stepsResponse = await apiClient.getTaskSteps(currentTask.id, {include_metadata: true});
+      console.log('Steps fetched:', stepsResponse.steps.length, 'steps');
+
+      setTask(currentTask);
       setSteps(stepsResponse.steps);
     } catch (error) {
+      console.error('Error loading task details:', error);
       Alert.alert(
         'Error',
         error instanceof Error ? error.message : 'Failed to load task details'
@@ -89,8 +113,8 @@ export const TaskDetail: React.FC = () => {
       await apiClient.pollQueueStatus(response.queue_id);
 
       // Reload steps after split
-      if (taskId) {
-        const stepsResponse = await apiClient.getTaskSteps(taskId, {include_metadata: true});
+      if (task?.id) {
+        const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
         setSteps(stepsResponse.steps);
       }
     } catch (error) {
@@ -106,7 +130,7 @@ export const TaskDetail: React.FC = () => {
   const completedCount = steps.filter(s => s.is_completed).length;
   const totalCount = steps.length;
 
-  if (!taskId) {
+  if (!taskIdPrefix) {
     return (
       <View style={styles.container}>
         <PageHeader title="Task Detail" icon={CircleCheckBig} />

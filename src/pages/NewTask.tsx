@@ -9,12 +9,15 @@ import {colors} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
 import {useNavigate} from 'react-router-dom';
 import {useTasks} from '../contexts/TasksContext';
+import {generateTaskSlug} from '../utils/slug';
+import {useAuth} from '../contexts/AuthContext';
 
 export const NewTask: React.FC = () => {
   const [taskInput, setTaskInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const {refreshTasks, refreshTasksSummary} = useTasks();
+  const {session} = useAuth();
 
   const handleCreateTask = async () => {
     if (!taskInput.trim()) {
@@ -33,14 +36,24 @@ export const NewTask: React.FC = () => {
       const queueStatus = await apiClient.pollQueueStatus(createResponse.queue_id);
 
       if (queueStatus.result?.task_id) {
+        // Fetch the task details to get the title for the slug
+        const tasksResponse = await apiClient.getTasks({user_id: session?.userId});
+        const newTask = tasksResponse.tasks.find(t => t.id === queueStatus.result.task_id);
+
         // Task created successfully - refresh all task lists
         await Promise.all([refreshTasks(), refreshTasksSummary()]);
 
         setTaskInput('');
         setIsLoading(false);
 
-        // Navigate to the new task
-        navigate(`/task/${queueStatus.result.task_id}`);
+        // Navigate to the new task using slug
+        if (newTask) {
+          const slug = generateTaskSlug(newTask.title, newTask.id);
+          navigate(`/task/${slug}`);
+        } else {
+          // Fallback to ID if we couldn't get the task details
+          navigate(`/task/new-task-${queueStatus.result.task_id.substring(0, 8)}`);
+        }
       }
     } catch (error) {
       setIsLoading(false);

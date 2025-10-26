@@ -6,6 +6,7 @@ import {TodayCard} from '../components/TodayCard';
 import {colors, typography} from '../theme/tokens';
 import {useNavigate} from 'react-router-dom';
 import {useTasks} from '../contexts/TasksContext';
+import {generateTaskSlug} from '../utils/slug';
 
 export const Today: React.FC = () => {
   const navigate = useNavigate();
@@ -15,8 +16,9 @@ export const Today: React.FC = () => {
     refreshTasksSummary();
   }, [refreshTasksSummary]);
 
-  const handleTaskPress = (taskId: string) => {
-    navigate(`/task/${taskId}`);
+  const handleTaskPress = (taskId: string, taskTitle: string) => {
+    const slug = generateTaskSlug(taskTitle, taskId);
+    navigate(`/task/${slug}`);
   };
 
   const today = new Date();
@@ -65,7 +67,7 @@ export const Today: React.FC = () => {
                     description=""
                     chipIcon={Timer}
                     chipLabel={task.next_step?.time_estimate || ''}
-                    onPress={() => handleTaskPress(task.id)}
+                    onPress={() => handleTaskPress(task.id, task.title)}
                   />
                 ))}
               </View>

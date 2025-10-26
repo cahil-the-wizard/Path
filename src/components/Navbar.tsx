@@ -24,6 +24,7 @@ import {colors, typography} from '../theme/tokens';
 import {useAuth} from '../contexts/AuthContext';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {useTasks} from '../contexts/TasksContext';
+import {generateTaskSlug, getTaskIdFromSlug} from '../utils/slug';
 
 interface AddTaskButtonProps {
   collapsed: boolean;
@@ -72,10 +73,11 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const {tasks, isLoading: loadingTasks, refreshTasks} = useTasks();
   const {signOut} = useAuth();
 
-  // Extract current task ID from URL if on task detail page
-  const currentTaskId = location.pathname.startsWith('/task/')
+  // Extract current task ID prefix from URL if on task detail page
+  const currentTaskSlug = location.pathname.startsWith('/task/')
     ? location.pathname.split('/task/')[1]
     : null;
+  const currentTaskIdPrefix = currentTaskSlug ? getTaskIdFromSlug(currentTaskSlug) : null;
 
   useEffect(() => {
     refreshTasks();
@@ -230,8 +232,8 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                       key={task.id}
                       label={task.title}
                       collapsed={collapsed}
-                      active={currentTaskId === task.id}
-                      onPress={() => navigate(`/task/${task.id}`)}
+                      active={currentTaskIdPrefix !== null && task.id.startsWith(currentTaskIdPrefix)}
+                      onPress={() => navigate(`/task/${generateTaskSlug(task.title, task.id)}`)}
                       textOpacity={opacityAnim}
                     />
                   ))

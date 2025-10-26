@@ -95,7 +95,7 @@ function AppContent(): React.JSX.Element {
                 }
               />
               <Route
-                path="/task/:taskId"
+                path="/task/:taskSlug"
                 element={
                   <ProtectedRoute isAuthenticated={isAuthenticated}>
                     <TaskDetail />
