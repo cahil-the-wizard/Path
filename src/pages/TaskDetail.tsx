@@ -36,7 +36,7 @@ export const TaskDetail: React.FC = () => {
       setIsLoading(true);
       const [tasksResponse, stepsResponse] = await Promise.all([
         apiClient.getTasks({user_id: session.userId}),
-        apiClient.getTaskSteps(id),
+        apiClient.getTaskSteps(id, {include_metadata: true}),
       ]);
 
       const currentTask = tasksResponse.tasks.find(t => t.id === id);
@@ -55,10 +55,12 @@ export const TaskDetail: React.FC = () => {
   };
 
   const handleToggleStep = async (stepId: string, currentState: boolean) => {
+    console.log('Toggle step clicked:', { stepId, currentState, newState: !currentState });
     try {
       await apiClient.updateStep(stepId, {
         is_completed: !currentState,
       });
+      console.log('Step updated successfully in database');
 
       // Update local state
       setSteps(prevSteps =>
@@ -68,7 +70,9 @@ export const TaskDetail: React.FC = () => {
             : step
         )
       );
+      console.log('Local state updated');
     } catch (error) {
+      console.error('Failed to update step:', error);
       Alert.alert(
         'Error',
         error instanceof Error ? error.message : 'Failed to update step'
@@ -86,7 +90,7 @@ export const TaskDetail: React.FC = () => {
 
       // Reload steps after split
       if (taskId) {
-        const stepsResponse = await apiClient.getTaskSteps(taskId);
+        const stepsResponse = await apiClient.getTaskSteps(taskId, {include_metadata: true});
         setSteps(stepsResponse.steps);
       }
     } catch (error) {
@@ -162,6 +166,8 @@ export const TaskDetail: React.FC = () => {
                     key={step.id}
                     title={step.title}
                     description={step.description}
+                    timeEstimate={step.time_estimate}
+                    completionCue={step.completion_cue}
                     completed={step.is_completed}
                     onToggle={() => handleToggleStep(step.id, step.is_completed)}
                     onSplit={() => handleSplitStep(step.id)}
