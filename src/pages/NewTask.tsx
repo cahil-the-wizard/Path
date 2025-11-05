@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, ActivityIndicator, Alert} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
+import {Tooltip} from '../components/Tooltip';
 import {TaskGenerationModal} from '../components/TaskGenerationModal';
 import {CirclePlus, Paperclip, Mic, ArrowRight} from 'lucide-react-native';
 import {colors} from '../theme/tokens';
@@ -83,16 +84,19 @@ export const NewTask: React.FC = () => {
                     placeholder="Tell me about the task you are struggling with"
                     value={taskInput}
                     onChangeText={setTaskInput}
+                    multiline={true}
                   />
 
                   <View style={styles.actions}>
                     <View style={styles.leftActions}>
-                      <Button
-                        variant="tertiary"
-                        size="large"
-                        label=""
-                        leftIcon={Paperclip}
-                      />
+                      <Tooltip text="Coming soon">
+                        <Button
+                          variant="tertiary"
+                          size="large"
+                          label=""
+                          leftIcon={Paperclip}
+                        />
+                      </Tooltip>
                     </View>
                     <View style={styles.rightActions}>
                       <Button

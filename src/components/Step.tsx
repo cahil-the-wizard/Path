@@ -25,78 +25,103 @@ export const Step: React.FC<StepProps> = ({
   onSplit,
   isSplitting = false,
 }) => {
-  return (
-    <View style={styles.container}>
-      <Pressable
-        style={styles.iconContainer}
-        onPress={onToggle}>
-        {completed ? (
-          <View style={styles.completedIcon}>
-            <Check size={12} color="white" strokeWidth={2} />
-          </View>
-        ) : (
-          <Circle size={24} color={colors.gray.light[400]} strokeWidth={1.5} />
-        )}
-      </Pressable>
+  // Parse description if it's a JSON array string
+  const parseDescription = (desc?: string): string[] => {
+    if (!desc) return [];
+    try {
+      const parsed = JSON.parse(desc);
+      return Array.isArray(parsed) ? parsed : [desc];
+    } catch {
+      return [desc];
+    }
+  };
 
-      <View style={styles.content}>
-        <View style={styles.textContainer}>
-          <Text
-            style={[
-              styles.title,
-              completed && styles.completedTitle,
-            ]}>
-            {title}
-          </Text>
-          {timeEstimate && (
-            <View style={styles.metadataItem}>
-              <Clock size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
-              <Text style={styles.metadataValue}>{timeEstimate}</Text>
+  const descriptionItems = parseDescription(description);
+
+  return (
+    <View style={styles.wrapper}>
+      <View style={styles.divider} />
+      <View style={styles.container}>
+        <Pressable
+          style={styles.iconContainer}
+          onPress={onToggle}>
+          {completed ? (
+            <View style={styles.completedIcon}>
+              <Check size={12} color="white" strokeWidth={2} />
             </View>
+          ) : (
+            <Circle size={24} color={colors.gray.light[400]} strokeWidth={1.5} />
           )}
-          {description && (
-            <View style={styles.metadataItem}>
-              <CircleDashed size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
-              <Text style={styles.metadataValue}>{description}</Text>
-            </View>
-          )}
-          {completionCue && (
-            <View style={styles.metadataItem}>
-              <CheckCircle2 size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
-              <Text style={styles.metadataValue}>{completionCue}</Text>
-            </View>
-          )}
-          {onSplit && !completed && (
-            <View style={styles.buttonContainer}>
-              {isSplitting ? (
-                <View style={styles.splittingButton}>
-                  <ActivityIndicator size="small" color={colors.gray.light[950]} />
-                  <Text style={styles.splittingText}>Splitting...</Text>
-                </View>
-              ) : (
-                <Button
-                  variant="tertiary"
-                  size="small"
-                  label="Split"
-                  leftIcon={BetweenHorizontalStart}
-                  onPress={onSplit}
-                  disabled={isSplitting}
-                />
-              )}
-            </View>
-          )}
+        </Pressable>
+
+        <View style={styles.content}>
+          <View style={styles.textContainer}>
+            <Text
+              style={[
+                styles.title,
+                completed && styles.completedTitle,
+              ]}>
+              {title}
+            </Text>
+            {!completed && timeEstimate && (
+              <View style={styles.metadataItem}>
+                <Clock size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
+                <Text style={styles.metadataValue}>{timeEstimate}</Text>
+              </View>
+            )}
+            {!completed && descriptionItems.length > 0 && (
+              <>
+                {descriptionItems.map((item, index) => (
+                  <View key={index} style={styles.metadataItem}>
+                    <CircleDashed size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
+                    <Text style={styles.metadataValue}>{item}</Text>
+                  </View>
+                ))}
+              </>
+            )}
+            {/* Completion cue hidden for now */}
+            {/* {!completed && completionCue && (
+              <View style={styles.metadataItem}>
+                <CheckCircle2 size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
+                <Text style={styles.metadataValue}>{completionCue}</Text>
+              </View>
+            )} */}
+            {onSplit && !completed && (
+              <View style={styles.buttonContainer}>
+                {isSplitting ? (
+                  <View style={styles.splittingButton}>
+                    <ActivityIndicator size="small" color={colors.gray.light[950]} />
+                    <Text style={styles.splittingText}>Splitting...</Text>
+                  </View>
+                ) : (
+                  <Button
+                    variant="tertiary"
+                    size="small"
+                    label="Split"
+                    leftIcon={BetweenHorizontalStart}
+                    onPress={onSplit}
+                    disabled={isSplitting}
+                  />
+                )}
+              </View>
+            )}
+          </View>
         </View>
-        <View style={styles.divider} />
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    alignSelf: 'stretch',
+    overflow: 'hidden',
+    flexDirection: 'column',
+    gap: 20,
+    paddingBottom: 20,
+  },
   container: {
     alignSelf: 'stretch',
-    paddingTop: 20,
-    overflow: 'hidden',
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
@@ -125,7 +150,6 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
-    gap: 20,
   },
   textContainer: {
     alignSelf: 'stretch',

@@ -13,7 +13,6 @@ import {
 import {
   CirclePlus,
   Sun,
-  Calendar,
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
@@ -58,8 +57,8 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({collapsed, onPress, active
 };
 
 interface NavbarProps {
-  onNavigate: (page: 'today' | 'calendar' | 'newTask' | 'taskDetail') => void;
-  currentPage: 'today' | 'calendar' | 'newTask' | 'taskDetail';
+  onNavigate: (page: 'today' | 'newTask' | 'taskDetail') => void;
+  currentPage: 'today' | 'newTask' | 'taskDetail';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
@@ -154,8 +153,18 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                 color={colors.gray.light[950]}
                 strokeWidth={1.5}
               />
+            ) : collapsed ? (
+              <Image
+                source={{uri: '/assets/logo-collapsed.svg'}}
+                style={styles.logoCollapsed}
+                resizeMode="contain"
+              />
             ) : (
-              <View style={styles.logo} />
+              <Image
+                source={{uri: '/assets/logo-expanded.svg'}}
+                style={styles.logoExpanded}
+                resizeMode="contain"
+              />
             )}
           </TouchableOpacity>
           <Animated.View style={{opacity: opacityAnim}}>
@@ -188,14 +197,6 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               active={currentPage === 'today'}
               collapsed={collapsed}
               onPress={() => onNavigate('today')}
-              textOpacity={opacityAnim}
-            />
-            <NavItem
-              label="Calendar"
-              icon={Calendar}
-              active={currentPage === 'calendar'}
-              collapsed={collapsed}
-              onPress={() => onNavigate('calendar')}
               textOpacity={opacityAnim}
             />
           </View>
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   header: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
     paddingVertical: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -327,8 +328,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoContainer: {
-    width: 34,
     height: 34,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
   },
   logoContainerCollapsed: {
     paddingHorizontal: 12,
@@ -346,6 +348,14 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: 6.44,
     backgroundColor: colors.gray.light[400],
+  },
+  logoCollapsed: {
+    width: 34,
+    height: 34,
+  },
+  logoExpanded: {
+    width: 120,
+    height: 34,
   },
   collapseButton: {
     padding: 8,

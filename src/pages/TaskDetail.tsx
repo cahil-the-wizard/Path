@@ -174,6 +174,7 @@ export const TaskDetail: React.FC = () => {
     if (!task) return;
 
     console.log('handleDelete called for task:', task.id);
+    setShowDeleteModal(false); // Close the modal first
 
     try {
       console.log('Calling deleteTask API...');
@@ -184,9 +185,9 @@ export const TaskDetail: React.FC = () => {
       console.log('Refreshing task lists...');
       await Promise.all([refreshTasks(), refreshTasksSummary()]);
 
-      // Navigate back to today page
-      console.log('Navigating to home...');
-      navigate('/');
+      // Navigate to new task page
+      console.log('Navigating to new task page...');
+      navigate('/new-task');
     } catch (error) {
       console.error('Error deleting task:', error);
       Alert.alert(

@@ -11,7 +11,7 @@ import {colors} from './src/theme/tokens';
 import {TasksProvider} from './src/contexts/TasksContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
 
-type Page = 'today' | 'calendar' | 'newTask' | 'taskDetail' | 'settings';
+type Page = 'today' | 'newTask' | 'taskDetail' | 'settings';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -49,7 +49,6 @@ function AppContent(): React.JSX.Element {
     'today': '/',
     'newTask': '/new-task',
     'taskDetail': '/task',
-    'calendar': '/calendar',
     'settings': '/settings',
   };
 
