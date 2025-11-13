@@ -85,6 +85,7 @@ export const NewTask: React.FC = () => {
                     value={taskInput}
                     onChangeText={setTaskInput}
                     multiline={true}
+                    style={styles.input}
                   />
 
                   <View style={styles.actions}>
@@ -217,5 +218,9 @@ const styles = StyleSheet.create({
   loader: {
     position: 'absolute',
     right: 16,
+  },
+  input: {
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
 });
