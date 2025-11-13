@@ -14,6 +14,7 @@ interface TextInputProps {
   editable?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  style?: any;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
@@ -27,6 +28,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   editable = true,
   onFocus,
   onBlur,
+  style,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -48,12 +50,13 @@ export const TextInput: React.FC<TextInputProps> = ({
     <View style={[
       styles.container,
       isFocused && styles.containerFocused,
+      style,
     ]}>
       <View style={styles.inputWrapper}>
         <RNTextInput
           style={styles.input}
           placeholder={placeholder}
-          placeholderTextColor={colors.gray.light[400]}
+          placeholderTextColor={colors.gray.light[500]}
           value={value}
           onChangeText={onChangeText}
           multiline={multiline}
@@ -83,22 +86,22 @@ export const TextInput: React.FC<TextInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignSelf: 'stretch',
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingVertical: 8,
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingVertical: 12,
     borderRadius: 8,
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
     flexDirection: 'row',
     gap: 8,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.gray.light[300],
+    backgroundColor: 'white',
     transition: 'border-color 0.2s ease',
-    minHeight: 40,
+    minHeight: 44,
   },
   containerFocused: {
-    borderColor: 'transparent',
+    borderColor: colors.indigo[500],
   },
   inputWrapper: {
     flex: 1,

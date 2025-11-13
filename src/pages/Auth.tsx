@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Alert} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity} from 'react-native';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
 import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator';
@@ -9,7 +9,7 @@ import {useAuth} from '../contexts/AuthContext';
 import {useNavigate} from 'react-router-dom';
 
 export const Auth: React.FC = () => {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -127,102 +127,124 @@ export const Auth: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.card}>
-          <View style={styles.header}>
-            <LogIn size={32} color={colors.indigo[600]} />
-            <Text style={styles.title}>
-              {mode === 'signin' ? 'Welcome back' : 'Create account'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {mode === 'signin'
-                ? 'Sign in to continue your path'
-                : 'Start breaking down your tasks'}
-            </Text>
-          </View>
+      {/* Logo */}
+      <Image
+        source={{uri: '/assets/logo-expanded.svg'}}
+        style={styles.logo}
+        resizeMode="contain"
+      />
 
-          <View style={styles.form}>
-            {mode === 'signup' && (
-              <View style={styles.inputWrapper}>
-                <Text style={styles.label}>Name</Text>
-                <TextInput
-                  placeholder="Your name"
-                  value={name}
-                  onChangeText={setName}
-                  editable={!isLoading}
+      {/* Split Screen Container */}
+      <View style={styles.splitContainer}>
+        {/* Left Side - Form */}
+        <View style={styles.leftPanel}>
+          <View style={styles.formContainer}>
+            {/* Header */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Welcome to Path</Text>
+              <Text style={styles.subtitle}>
+                Your first step toward progress starts here.
+              </Text>
+            </View>
+
+            {/* Form */}
+            <View style={styles.form}>
+              {/* Google Sign Up Button */}
+              <TouchableOpacity style={styles.googleButton}>
+                <Image
+                  source={{uri: '/assets/google-icon.png'}}
+                  style={styles.googleIcon}
+                  resizeMode="contain"
                 />
-              </View>
-            )}
+                <Text style={styles.googleButtonText}>
+                  {mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
+                </Text>
+              </TouchableOpacity>
 
-            <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Email</Text>
+              {/* Divider */}
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+
+              {/* Email Input */}
               <TextInput
-                placeholder="you@example.com"
+                placeholder="Email"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!isLoading}
               />
-            </View>
 
-            <View style={[styles.inputWrapper, showPasswordStrength && styles.inputWrapperElevated]}>
-              <Text style={styles.label}>Password</Text>
+              {/* Password Input */}
               <TextInput
-                placeholder="Enter your password"
+                placeholder="Password"
                 value={password}
                 onChangeText={setPassword}
-                onFocus={() => {
-                  if (mode === 'signup' && password.length > 0) {
-                    setShowPasswordStrength(true);
-                  }
-                }}
-                onBlur={() => setShowPasswordStrength(false)}
                 secureTextEntry
                 editable={!isLoading}
               />
-              {showPasswordStrength && mode === 'signup' && (
-                <View style={styles.passwordStrengthPopover}>
-                  <PasswordStrengthIndicator password={password} />
-                </View>
-              )}
             </View>
 
-            <Button
-              variant="primary"
-              size="large"
-              label={isLoading ? '' : mode === 'signin' ? 'Sign in' : 'Sign up'}
+            {/* Sign Up Button */}
+            <TouchableOpacity
+              style={[styles.signUpButton, isLoading && styles.signUpButtonDisabled]}
               onPress={handleAuth}
-              disabled={isLoading}
-            />
+              disabled={isLoading}>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.signUpButtonText}>
+                  {mode === 'signup' ? 'Sign up' : 'Sign in'}
+                </Text>
+              )}
+            </TouchableOpacity>
 
-            {isLoading && (
-              <ActivityIndicator
-                size="small"
-                color={colors.indigo[600]}
-                style={styles.loader}
-              />
-            )}
+            {/* Footer */}
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                {mode === 'signin'
+                  ? "Don't have an account? "
+                  : 'Already have an account? '}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (!isLoading) {
+                    setMode(mode === 'signin' ? 'signup' : 'signin');
+                    setName('');
+                    setEmail('');
+                    setPassword('');
+                  }
+                }}
+                style={styles.footerLinkContainer}>
+                <Text style={styles.footerLink}>
+                  {mode === 'signin' ? 'Sign up' : 'Log in'}
+                </Text>
+                {mode === 'signup' && (
+                  <Image
+                    source={{uri: '/assets/underline-scribble.svg'}}
+                    style={styles.underlineScribble}
+                    resizeMode="contain"
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
+        </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              {mode === 'signin'
-                ? "Don't have an account? "
-                : 'Already have an account? '}
-            </Text>
-            <Text
-              style={styles.footerLink}
-              onPress={() => {
-                if (!isLoading) {
-                  setMode(mode === 'signin' ? 'signup' : 'signin');
-                  setName('');
-                  setEmail('');
-                  setPassword('');
-                }
-              }}>
-              {mode === 'signin' ? 'Sign up' : 'Sign in'}
-            </Text>
+        {/* Right Side - Hero Image */}
+        <View style={styles.rightPanel}>
+          <Image
+            source={{uri: '/assets/hero-mountain.png'}}
+            style={styles.heroImage}
+            resizeMode="cover"
+          />
+          <View style={styles.heroTextContainer}>
+            <Text style={[styles.heroText, {opacity: 0.3}]}>Big goals.</Text>
+            <Text style={[styles.heroText, {opacity: 0.5}]}>Small steps.</Text>
+            <Text style={[styles.heroText, {opacity: 0.8}]}>Find your path.</Text>
           </View>
         </View>
       </View>
@@ -233,8 +255,171 @@ export const Auth: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     height: '100vh',
-    backgroundColor: colors.gray.light[50],
+    backgroundColor: 'white',
+    position: 'relative',
   },
+  logo: {
+    position: 'absolute',
+    top: 32,
+    left: 32,
+    width: 120,
+    height: 32,
+    zIndex: 10,
+  },
+  splitContainer: {
+    flexDirection: 'row',
+    height: '100%',
+    width: '100%',
+  },
+  leftPanel: {
+    flex: 1,
+    paddingLeft: 64,
+    paddingRight: 32,
+    paddingVertical: 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 450,
+    gap: 36,
+  },
+  header: {
+    gap: 12,
+  },
+  title: {
+    fontSize: 32,
+    fontFamily: typography.title.subtitle.fontFamily,
+    fontWeight: '400',
+    color: colors.gray.light[800],
+    lineHeight: 38.4,
+    letterSpacing: -0.64,
+  },
+  subtitle: {
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    color: colors.gray.light[700],
+    lineHeight: typography.body.base.lineHeight,
+  },
+  form: {
+    gap: 20,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 38,
+    borderWidth: 1,
+    borderColor: colors.gray.light[300],
+    backgroundColor: 'white',
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+  },
+  googleButtonText: {
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    color: colors.gray.light[950],
+    lineHeight: typography.body.base.lineHeight,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.gray.light[300],
+  },
+  dividerText: {
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    color: colors.gray.light[600],
+    lineHeight: typography.body.small.lineHeight,
+  },
+  signUpButton: {
+    backgroundColor: colors.indigo[500],
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  signUpButtonDisabled: {
+    opacity: 0.6,
+  },
+  signUpButtonText: {
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    color: 'white',
+    fontWeight: '400',
+    lineHeight: typography.body.base.lineHeight,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    color: 'black',
+    lineHeight: typography.body.base.lineHeight,
+  },
+  footerLinkContainer: {
+    position: 'relative',
+  },
+  footerLink: {
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
+    fontWeight: '600',
+    color: 'black',
+    lineHeight: typography.body.base.lineHeight,
+  },
+  underlineScribble: {
+    position: 'absolute',
+    bottom: -4,
+    left: 0,
+    width: 72,
+    height: 9,
+  },
+  rightPanel: {
+    flex: 1,
+    maxWidth: 714,
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 20,
+    marginLeft: 10,
+    marginRight: 32,
+    marginTop: 32,
+    marginBottom: 32,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  heroTextContainer: {
+    position: 'absolute',
+    top: 64,
+    left: 32,
+    gap: 4,
+    paddingLeft: 0,
+  },
+  heroText: {
+    fontSize: 52,
+    fontFamily: typography.title.subtitle.fontFamily,
+    fontWeight: '400',
+    color: colors.gray.light[25],
+    lineHeight: 72.8,
+    letterSpacing: -1.04,
+  },
+  // Email confirmation styles
   content: {
     height: '100%',
     alignItems: 'center',
@@ -252,70 +437,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
-    overflow: 'visible',
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: typography.heading.subheading.fontFamily,
-    fontWeight: '600',
-    color: colors.gray.light[900],
-    marginTop: 16,
-  },
-  subtitle: {
-    fontSize: typography.body.base.fontSize,
-    fontFamily: typography.body.base.fontFamily,
-    color: colors.gray.light[600],
-    marginTop: 8,
-  },
-  form: {
-    width: '100%',
-    gap: 20,
-    overflow: 'visible',
-  },
-  inputWrapper: {
-    width: '100%',
-    gap: 8,
-    position: 'relative',
-  },
-  inputWrapperElevated: {
-    zIndex: 100,
-  },
-  passwordStrengthPopover: {
-    position: 'absolute',
-    top: 0,
-    right: '100%',
-    marginRight: 16,
-    width: 340,
-    zIndex: 1000,
-  },
-  label: {
-    fontSize: typography.body.small.fontSize,
-    fontFamily: typography.body.small.fontFamily,
-    fontWeight: '600',
-    color: colors.gray.light[700],
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 24,
-  },
-  footerText: {
-    fontSize: typography.body.small.fontSize,
-    fontFamily: typography.body.small.fontFamily,
-    color: colors.gray.light[600],
-  },
-  footerLink: {
-    fontSize: typography.body.small.fontSize,
-    fontFamily: typography.body.small.fontFamily,
-    fontWeight: '600',
-    color: colors.indigo[600],
-  },
-  loader: {
-    marginTop: -48,
   },
   emailText: {
     fontWeight: '600',
