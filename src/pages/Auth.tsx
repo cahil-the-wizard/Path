@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity, Animated} from 'react-native';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
 import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator';
@@ -19,6 +19,56 @@ export const Auth: React.FC = () => {
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
   const {signIn, signUp, updateUserData} = useAuth();
+
+  // Animation values for hero text
+  const fadeAnim1 = useState(() => new Animated.Value(0))[0];
+  const fadeAnim2 = useState(() => new Animated.Value(0))[0];
+  const fadeAnim3 = useState(() => new Animated.Value(0))[0];
+  const translateY1 = useState(() => new Animated.Value(20))[0];
+  const translateY2 = useState(() => new Animated.Value(20))[0];
+  const translateY3 = useState(() => new Animated.Value(20))[0];
+
+  useEffect(() => {
+    // Animate each text line with staggered timing
+    Animated.stagger(200, [
+      Animated.parallel([
+        Animated.timing(fadeAnim1, {
+          toValue: 0.3,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY1, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(fadeAnim2, {
+          toValue: 0.5,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY2, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(fadeAnim3, {
+          toValue: 0.8,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY3, {
+          toValue: 0,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
 
   const handleAuth = async () => {
     if (!email.trim() || !password.trim()) {
@@ -242,9 +292,36 @@ export const Auth: React.FC = () => {
             resizeMode="cover"
           />
           <View style={styles.heroTextContainer}>
-            <Text style={[styles.heroText, {opacity: 0.3}]}>Big goals.</Text>
-            <Text style={[styles.heroText, {opacity: 0.5}]}>Small steps.</Text>
-            <Text style={[styles.heroText, {opacity: 0.8}]}>Find your path.</Text>
+            <Animated.Text
+              style={[
+                styles.heroText,
+                {
+                  opacity: fadeAnim1,
+                  transform: [{translateY: translateY1}]
+                }
+              ]}>
+              Big goals.
+            </Animated.Text>
+            <Animated.Text
+              style={[
+                styles.heroText,
+                {
+                  opacity: fadeAnim2,
+                  transform: [{translateY: translateY2}]
+                }
+              ]}>
+              Small steps.
+            </Animated.Text>
+            <Animated.Text
+              style={[
+                styles.heroText,
+                {
+                  opacity: fadeAnim3,
+                  transform: [{translateY: translateY3}]
+                }
+              ]}>
+              Find your path.
+            </Animated.Text>
           </View>
         </View>
       </View>
@@ -383,8 +460,8 @@ const styles = StyleSheet.create({
   },
   underlineScribble: {
     position: 'absolute',
-    bottom: -4,
-    left: 0,
+    bottom: -9,
+    left: -4,
     width: 72,
     height: 9,
   },
@@ -407,8 +484,8 @@ const styles = StyleSheet.create({
   heroTextContainer: {
     position: 'absolute',
     top: 64,
-    left: 32,
-    gap: 4,
+    left: 64,
+    gap: -4,
     paddingLeft: 0,
   },
   heroText: {
