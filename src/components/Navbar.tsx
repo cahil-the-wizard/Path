@@ -343,6 +343,7 @@ const styles = StyleSheet.create({
     height: 34,
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
+    alignSelf: 'flex-start',
   },
   logoContainerCollapsed: {
     paddingHorizontal: 12,
