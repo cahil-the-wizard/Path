@@ -5,6 +5,10 @@ import {Step} from '../components/Step';
 import {Button} from '../components/Button';
 import {Dropdown, DropdownItem} from '../components/Dropdown';
 import {ConfirmationModal} from '../components/ConfirmationModal';
+import {RewriteStepModal} from '../components/RewriteStepModal';
+import {RewriteTaskModal} from '../components/RewriteTaskModal';
+import {TaskGenerationModal} from '../components/TaskGenerationModal';
+import {AddStepModal} from '../components/AddStepModal';
 import {CircleCheckBig, MoreHorizontal, Copy, Edit, Trash2} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
@@ -25,8 +29,16 @@ export const TaskDetail: React.FC = () => {
   const [steps, setSteps] = useState<StepWithMetadata[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSplitting, setIsSplitting] = useState<string | null>(null);
+  const [isRewriting, setIsRewriting] = useState<string | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRewriteStepModal, setShowRewriteStepModal] = useState(false);
+  const [showRewriteTaskModal, setShowRewriteTaskModal] = useState(false);
+  const [showAddStepModal, setShowAddStepModal] = useState(false);
+  const [selectedStep, setSelectedStep] = useState<{id: string; title: string} | null>(null);
+  const [selectedStepForAdd, setSelectedStepForAdd] = useState<string | null>(null);
+  const [isRewritingTask, setIsRewritingTask] = useState(false);
+  const [isAddingStep, setIsAddingStep] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
@@ -94,7 +106,7 @@ export const TaskDetail: React.FC = () => {
       });
       console.log('Step updated successfully in database');
 
-      // Update local state
+      // Update local step state immediately for instant feedback
       setSteps(prevSteps =>
         prevSteps.map(step =>
           step.id === stepId
@@ -102,7 +114,21 @@ export const TaskDetail: React.FC = () => {
             : step
         )
       );
-      console.log('Local state updated');
+      console.log('Local step state updated');
+
+      // Refresh task to get auto-complete status from backend
+      // The backend automatically marks task as completed when all steps are done
+      if (taskIdPrefix) {
+        const tasksResponse = await apiClient.getTasks({user_id: session?.userId});
+        const updatedTask = tasksResponse.tasks.find(t => t.id.startsWith(taskIdPrefix));
+        if (updatedTask) {
+          setTask(updatedTask);
+          console.log('Task status refreshed:', updatedTask.status);
+        }
+      }
+
+      // Also refresh task lists in the navbar
+      await refreshTasks();
     } catch (error) {
       console.error('Failed to update step:', error);
       Alert.alert(
@@ -132,6 +158,116 @@ export const TaskDetail: React.FC = () => {
       );
     } finally {
       setIsSplitting(null);
+    }
+  };
+
+  const handleRewriteStepClick = (stepId: string, stepTitle: string) => {
+    setSelectedStep({id: stepId, title: stepTitle});
+    setShowRewriteStepModal(true);
+  };
+
+  const handleRewriteStep = async (prompt: string) => {
+    if (!selectedStep) return;
+
+    try {
+      setShowRewriteStepModal(false);
+      setIsRewriting(selectedStep.id);
+      const response = await apiClient.rewriteStep({
+        step_id: selectedStep.id,
+        prompt,
+      });
+
+      // Poll for completion
+      await apiClient.pollQueueStatus(response.queue_id);
+
+      // Reload steps after rewrite
+      if (task?.id) {
+        const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
+        setSteps(stepsResponse.steps);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to rewrite step'
+      );
+    } finally {
+      setIsRewriting(null);
+      setSelectedStep(null);
+    }
+  };
+
+  const handleRewriteTaskClick = () => {
+    setShowDropdown(false);
+    setShowRewriteTaskModal(true);
+  };
+
+  const handleRewriteTask = async (prompt: string) => {
+    if (!task) return;
+
+    try {
+      setShowRewriteTaskModal(false);
+      setIsRewritingTask(true);
+      const response = await apiClient.rewriteTask({
+        task_id: task.id,
+        prompt,
+      });
+
+      // Poll for completion
+      await apiClient.pollQueueStatus(response.queue_id);
+
+      // Reload task and steps after rewrite
+      if (taskIdPrefix) {
+        await loadTaskDetails(taskIdPrefix);
+      }
+
+      // Refresh task lists
+      await Promise.all([refreshTasks(), refreshTasksSummary()]);
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to rewrite task'
+      );
+    } finally {
+      setIsRewritingTask(false);
+    }
+  };
+
+  const handleAddAfterClick = (stepId: string) => {
+    setSelectedStepForAdd(stepId);
+    setShowAddStepModal(true);
+  };
+
+  const handleAddStep = async (prompt: string) => {
+    if (!task || !selectedStepForAdd) return;
+
+    try {
+      setShowAddStepModal(false);
+      setIsAddingStep(selectedStepForAdd);
+      const response = await apiClient.addStep({
+        task_id: task.id,
+        prompt,
+        insert_after_step_id: selectedStepForAdd,
+      });
+
+      // Poll for completion
+      await apiClient.pollQueueStatus(response.queue_id);
+
+      // Reload steps after adding
+      if (task?.id) {
+        const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
+        setSteps(stepsResponse.steps);
+      }
+
+      // Refresh task lists
+      await refreshTasks();
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to add step'
+      );
+    } finally {
+      setIsAddingStep(null);
+      setSelectedStepForAdd(null);
     }
   };
 
@@ -204,9 +340,9 @@ export const TaskDetail: React.FC = () => {
       onPress: handleDuplicate,
     },
     {
-      label: 'Edit',
+      label: 'Rewrite Task',
       icon: Edit,
-      onPress: handleEdit,
+      onPress: handleRewriteTaskClick,
     },
     {
       label: 'Delete',
@@ -290,6 +426,30 @@ export const TaskDetail: React.FC = () => {
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteModal(false)}
       />
+      <RewriteStepModal
+        visible={showRewriteStepModal}
+        stepTitle={selectedStep?.title || ''}
+        onConfirm={handleRewriteStep}
+        onCancel={() => {
+          setShowRewriteStepModal(false);
+          setSelectedStep(null);
+        }}
+      />
+      <RewriteTaskModal
+        visible={showRewriteTaskModal}
+        taskTitle={task?.title || ''}
+        onConfirm={handleRewriteTask}
+        onCancel={() => setShowRewriteTaskModal(false)}
+      />
+      <AddStepModal
+        visible={showAddStepModal}
+        onConfirm={handleAddStep}
+        onCancel={() => {
+          setShowAddStepModal(false);
+          setSelectedStepForAdd(null);
+        }}
+      />
+      <TaskGenerationModal visible={isRewritingTask} />
       <View style={styles.content}>
         <View style={styles.centeredContent}>
           <View style={styles.body}>
@@ -313,7 +473,11 @@ export const TaskDetail: React.FC = () => {
                     completed={step.is_completed}
                     onToggle={() => handleToggleStep(step.id, step.is_completed)}
                     onSplit={() => handleSplitStep(step.id)}
+                    onRewrite={() => handleRewriteStepClick(step.id, step.title)}
+                    onAddAfter={() => handleAddAfterClick(step.id)}
                     isSplitting={isSplitting === step.id}
+                    isRewriting={isRewriting === step.id}
+                    isAddingAfter={isAddingStep === step.id}
                   />
                 ))
               )}

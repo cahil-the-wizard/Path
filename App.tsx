@@ -5,13 +5,14 @@ import {Navbar} from './src/components/Navbar';
 import {NewTask} from './src/pages/NewTask';
 import {Today} from './src/pages/Today';
 import {TaskDetail} from './src/pages/TaskDetail';
+import {TasksList} from './src/pages/TasksList';
 import {Auth} from './src/pages/Auth';
 // import {Settings} from './src/pages/Settings';
 import {colors} from './src/theme/tokens';
 import {TasksProvider} from './src/contexts/TasksContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
 
-type Page = 'today' | 'newTask' | 'taskDetail' | 'settings';
+type Page = 'today' | 'newTask' | 'tasksList' | 'taskDetail' | 'settings';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -40,6 +41,7 @@ function AppContent(): React.JSX.Element {
   const getPageFromPath = (pathname: string): Page => {
     if (pathname === '/') return 'today';
     if (pathname === '/new-task') return 'newTask';
+    if (pathname === '/tasks') return 'tasksList';
     if (pathname.startsWith('/task/')) return 'taskDetail';
     if (pathname === '/settings') return 'settings';
     return 'today';
@@ -48,6 +50,7 @@ function AppContent(): React.JSX.Element {
   const pageToPath: Record<Page, string> = {
     'today': '/',
     'newTask': '/new-task',
+    'tasksList': '/tasks',
     'taskDetail': '/task',
     'settings': '/settings',
   };
@@ -90,6 +93,14 @@ function AppContent(): React.JSX.Element {
                 element={
                   <ProtectedRoute isAuthenticated={isAuthenticated}>
                     <NewTask />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <TasksList />
                   </ProtectedRoute>
                 }
               />

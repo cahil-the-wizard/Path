@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity, Animated} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity, Animated, useWindowDimensions} from 'react-native';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
 import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator';
@@ -19,6 +19,8 @@ export const Auth: React.FC = () => {
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const navigate = useNavigate();
   const {signIn, signUp, updateUserData} = useAuth();
+  const {width} = useWindowDimensions();
+  const isMobile = width < 768;
 
   // Animation values for hero text
   const fadeAnim1 = useState(() => new Animated.Value(0))[0];
@@ -177,14 +179,14 @@ export const Auth: React.FC = () => {
       {/* Logo */}
       <Image
         source={{uri: '/assets/logo-expanded.svg'}}
-        style={styles.logo}
+        style={[styles.logo, isMobile && styles.logoMobile]}
         resizeMode="contain"
       />
 
       {/* Split Screen Container */}
-      <View style={styles.splitContainer}>
+      <View style={[styles.splitContainer, isMobile && styles.splitContainerMobile]}>
         {/* Left Side - Form or Confirmation */}
-        <View style={styles.leftPanel}>
+        <View style={[styles.leftPanel, isMobile && styles.leftPanelMobile]}>
           {showEmailConfirmation ? (
             renderEmailConfirmation()
           ) : (
@@ -303,6 +305,7 @@ export const Auth: React.FC = () => {
         </View>
 
         {/* Right Side - Hero Image */}
+        {!isMobile && (
         <View style={styles.rightPanel}>
           <Image
             source={{uri: '/assets/hero-mountain.png'}}
@@ -342,6 +345,7 @@ export const Auth: React.FC = () => {
             </Animated.Text>
           </View>
         </View>
+        )}
       </View>
     </View>
   );
@@ -580,5 +584,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 62,
+  },
+  logoMobile: {
+    top: 20,
+    left: 20,
+    width: 100,
+    height: 27,
+  },
+  splitContainerMobile: {
+    flexDirection: 'column',
+  },
+  leftPanelMobile: {
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingVertical: 32,
   },
 });

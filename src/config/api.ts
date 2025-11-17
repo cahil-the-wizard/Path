@@ -13,6 +13,8 @@ export const API_ENDPOINTS = {
   updateStep: (stepId: string) => `/update-step/${stepId}`,
   addStep: '/add-step',
   splitStep: (stepId: string) => `/split-step/${stepId}`,
+  rewriteStep: '/rewrite-step',
+  rewriteTask: '/rewrite-task',
   getQueueStatus: (queueId: string) => `/get-queue-status/${queueId}`,
   getTasksSummary: '/get-tasks-summary',
 } as const;

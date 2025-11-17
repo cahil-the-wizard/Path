@@ -13,6 +13,7 @@ import {
 import {
   CirclePlus,
   Sun,
+  CircleCheckBig,
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
@@ -57,8 +58,8 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({collapsed, onPress, active
 };
 
 interface NavbarProps {
-  onNavigate: (page: 'today' | 'newTask' | 'taskDetail') => void;
-  currentPage: 'today' | 'newTask' | 'taskDetail';
+  onNavigate: (page: 'today' | 'newTask' | 'tasksList' | 'taskDetail') => void;
+  currentPage: 'today' | 'newTask' | 'tasksList' | 'taskDetail';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
@@ -199,6 +200,14 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               onPress={() => onNavigate('today')}
               textOpacity={opacityAnim}
             />
+            <NavItem
+              label="Tasks"
+              icon={CircleCheckBig}
+              active={currentPage === 'tasksList'}
+              collapsed={collapsed}
+              onPress={() => onNavigate('tasksList')}
+              textOpacity={opacityAnim}
+            />
           </View>
         </View>
 
@@ -216,7 +225,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
           {!collapsed && (
             <View style={styles.tasksSection}>
               <View style={styles.tasksSectionHeader}>
-                <Text style={styles.tasksSectionTitle}>Tasks</Text>
+                <Text style={styles.tasksSectionTitle}>Active</Text>
               </View>
               <ScrollView style={styles.tasksList}>
                 {loadingTasks ? (

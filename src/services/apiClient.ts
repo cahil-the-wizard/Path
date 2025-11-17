@@ -10,12 +10,16 @@ import type {
   UpdateStepResponse,
   AddStepResponse,
   SplitStepResponse,
+  RewriteStepResponse,
+  RewriteTaskResponse,
   GetTasksSummaryResponse,
   CreateTaskRequest,
   UpdateTaskRequest,
   UpdateStepRequest,
   AddStepRequest,
   SplitStepRequest,
+  RewriteStepRequest,
+  RewriteTaskRequest,
   GetTasksParams,
   GetTaskStepsParams,
   GetTasksSummaryParams,
@@ -186,6 +190,20 @@ class ApiClient {
     return this.request<SplitStepResponse>(API_ENDPOINTS.splitStep(stepId), {
       method: 'POST',
       body: JSON.stringify(data || {}),
+    });
+  }
+
+  async rewriteStep(data: RewriteStepRequest): Promise<RewriteStepResponse> {
+    return this.request<RewriteStepResponse>(API_ENDPOINTS.rewriteStep, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async rewriteTask(data: RewriteTaskRequest): Promise<RewriteTaskResponse> {
+    return this.request<RewriteTaskResponse>(API_ENDPOINTS.rewriteTask, {
+      method: 'POST',
+      body: JSON.stringify(data),
     });
   }
 

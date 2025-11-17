@@ -32,7 +32,11 @@ export const TasksProvider: React.FC<{children: ReactNode}> = ({children}) => {
         status: 'active',
         limit: 10
       });
-      setTasks(response.tasks);
+      // Sort by most recent first
+      const sortedTasks = response.tasks.sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setTasks(sortedTasks);
     } catch (error) {
       console.error('Failed to refresh tasks:', error);
     } finally {

@@ -41,26 +41,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         )}
         <Text style={styles.title}>{title}</Text>
       </View>
-      <View style={styles.rightSection}>
-        {actions || (
-          <>
-            <Button
-              variant="ghost"
-              size="small"
-              label=""
-              leftIcon={Clipboard}
-              onPress={() => console.log('Copy')}
-            />
-            <Button
-              variant="ghost"
-              size="small"
-              label=""
-              leftIcon={MoreHorizontal}
-              onPress={() => console.log('More options')}
-            />
-          </>
-        )}
-      </View>
+      {actions && (
+        <View style={styles.rightSection}>
+          {actions}
+        </View>
+      )}
     </View>
   );
 };

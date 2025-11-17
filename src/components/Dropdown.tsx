@@ -16,6 +16,7 @@ interface DropdownProps {
   onClose: () => void;
   anchorRef?: React.RefObject<View>;
   align?: 'left' | 'right';
+  position?: {x: number; y: number};
 }
 
 export const Dropdown: React.FC<DropdownProps> = ({
@@ -23,8 +24,21 @@ export const Dropdown: React.FC<DropdownProps> = ({
   visible,
   onClose,
   align = 'right',
+  position,
 }) => {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
   if (!visible) return null;
+
+  const dropdownStyle = position
+    ? {
+        position: 'fixed' as const,
+        left: position.x,
+        top: position.y,
+      }
+    : align === 'right'
+    ? styles.alignRight
+    : styles.alignLeft;
 
   return (
     <>
@@ -35,15 +49,20 @@ export const Dropdown: React.FC<DropdownProps> = ({
       />
 
       {/* Dropdown Menu */}
-      <View style={[styles.container, align === 'right' ? styles.alignRight : styles.alignLeft]}>
+      <View style={[styles.container, dropdownStyle]}>
         {items.map((item, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.item}
+            style={[
+              styles.item,
+              hoveredIndex === index && styles.itemHovered,
+            ]}
             onPress={() => {
               item.onPress();
               onClose();
-            }}>
+            }}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}>
             {item.icon && (
               <item.icon
                 size={16}
@@ -105,6 +124,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     cursor: 'pointer',
   } as any,
+  itemHovered: {
+    backgroundColor: colors.gray.light[50],
+  },
   itemText: {
     color: colors.gray.light[700],
     fontSize: typography.body.small.fontSize,

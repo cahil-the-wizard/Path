@@ -102,6 +102,18 @@ export interface SplitStepResponse {
   message: string;
 }
 
+export interface RewriteStepResponse {
+  queue_id: string;
+  status: 'pending';
+  message: string;
+}
+
+export interface RewriteTaskResponse {
+  queue_id: string;
+  status: 'pending';
+  message: string;
+}
+
 export interface GetTasksSummaryResponse {
   tasks: TaskSummary[];
 }
@@ -127,10 +139,21 @@ export interface AddStepRequest {
   task_id: string;
   prompt: string;
   insert_after_step_id?: string;
+  insert_before_step_id?: string;
 }
 
 export interface SplitStepRequest {
   additional_context?: string;
+}
+
+export interface RewriteStepRequest {
+  step_id: string;
+  prompt: string;
+}
+
+export interface RewriteTaskRequest {
+  task_id: string;
+  prompt: string;
 }
 
 export interface GetTasksParams {

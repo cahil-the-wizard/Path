@@ -1,7 +1,9 @@
-import React from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Pressable} from 'react-native';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, CircleDashed} from 'lucide-react-native';
+import React, {useState, useRef, useEffect} from 'react';
+import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity} from 'react-native';
+import {createPortal} from 'react-dom';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3} from 'lucide-react-native';
 import {Button} from './Button';
+import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
 
 interface StepProps {
@@ -12,7 +14,11 @@ interface StepProps {
   completed?: boolean;
   onToggle?: () => void;
   onSplit?: () => void;
+  onRewrite?: () => void;
+  onAddAfter?: () => void;
   isSplitting?: boolean;
+  isRewriting?: boolean;
+  isAddingAfter?: boolean;
 }
 
 export const Step: React.FC<StepProps> = ({
@@ -23,8 +29,26 @@ export const Step: React.FC<StepProps> = ({
   completed = false,
   onToggle,
   onSplit,
+  onRewrite,
+  onAddAfter,
   isSplitting = false,
+  isRewriting = false,
+  isAddingAfter = false,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [showSplitTooltip, setShowSplitTooltip] = useState(false);
+  const [showRewriteTooltip, setShowRewriteTooltip] = useState(false);
+  const [showAddAfterTooltip, setShowAddAfterTooltip] = useState(false);
+  const [splitHovered, setSplitHovered] = useState(false);
+  const [rewriteHovered, setRewriteHovered] = useState(false);
+  const [addAfterHovered, setAddAfterHovered] = useState(false);
+  const [splitTooltipPosition, setSplitTooltipPosition] = useState({x: 0, y: 0});
+  const [rewriteTooltipPosition, setRewriteTooltipPosition] = useState({x: 0, y: 0});
+  const [addAfterTooltipPosition, setAddAfterTooltipPosition] = useState({x: 0, y: 0});
+  const splitButtonRef = useRef<any>(null);
+  const rewriteButtonRef = useRef<any>(null);
+  const addAfterButtonRef = useRef<any>(null);
+
   // Parse description if it's a JSON array string
   const parseDescription = (desc?: string): string[] => {
     if (!desc) return [];
@@ -38,24 +62,57 @@ export const Step: React.FC<StepProps> = ({
 
   const descriptionItems = parseDescription(description);
 
+  // Update tooltip positions when buttons are hovered
+  useEffect(() => {
+    if (showSplitTooltip && splitButtonRef.current) {
+      const rect = splitButtonRef.current.getBoundingClientRect();
+      setSplitTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+    }
+  }, [showSplitTooltip]);
+
+  useEffect(() => {
+    if (showRewriteTooltip && rewriteButtonRef.current) {
+      const rect = rewriteButtonRef.current.getBoundingClientRect();
+      setRewriteTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+    }
+  }, [showRewriteTooltip]);
+
+  useEffect(() => {
+    if (showAddAfterTooltip && addAfterButtonRef.current) {
+      const rect = addAfterButtonRef.current.getBoundingClientRect();
+      setAddAfterTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+    }
+  }, [showAddAfterTooltip]);
+
   return (
     <View style={styles.wrapper}>
       <View style={styles.divider} />
-      <View style={styles.container}>
-        <Pressable
-          style={styles.iconContainer}
-          onPress={onToggle}>
-          {completed ? (
-            <View style={styles.completedIcon}>
-              <Check size={12} color="white" strokeWidth={2} />
-            </View>
-          ) : (
-            <Circle size={24} color={colors.gray.light[400]} strokeWidth={1.5} />
-          )}
-        </Pressable>
-
+      <View
+        style={styles.container}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}>
         <View style={styles.content}>
-          <View style={styles.textContainer}>
+          <View style={styles.titleRow}>
+            <Pressable
+              style={styles.iconContainer}
+              onPress={onToggle}>
+              {completed ? (
+                <View style={styles.completedIcon}>
+                  <Check size={12} color="white" strokeWidth={2} />
+                </View>
+              ) : (
+                <Circle size={24} color={colors.gray.light[400]} strokeWidth={1.5} />
+              )}
+            </Pressable>
             <Text
               style={[
                 styles.title,
@@ -63,21 +120,21 @@ export const Step: React.FC<StepProps> = ({
               ]}>
               {title}
             </Text>
-            {!completed && timeEstimate && (
-              <View style={styles.metadataItem}>
-                <Clock size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
-                <Text style={styles.metadataValue}>{timeEstimate}</Text>
-              </View>
-            )}
+          </View>
+
+          <View style={styles.metadataContainer}>
             {!completed && descriptionItems.length > 0 && (
               <>
                 {descriptionItems.map((item, index) => (
-                  <View key={index} style={styles.metadataItem}>
-                    <CircleDashed size={18} color={colors.gray.light[950]} strokeWidth={1.12} />
-                    <Text style={styles.metadataValue}>{item}</Text>
-                  </View>
+                  <Text key={index} style={styles.metadataValue}>{item}</Text>
                 ))}
               </>
+            )}
+            {!completed && timeEstimate && (
+              <View style={styles.timeChip}>
+                <Clock size={14} color={colors.indigo[600]} strokeWidth={1.5} />
+                <Text style={styles.timeChipText}>{timeEstimate}</Text>
+              </View>
             )}
             {/* Completion cue hidden for now */}
             {/* {!completed && completionCue && (
@@ -86,28 +143,139 @@ export const Step: React.FC<StepProps> = ({
                 <Text style={styles.metadataValue}>{completionCue}</Text>
               </View>
             )} */}
-            {onSplit && !completed && (
-              <View style={styles.buttonContainer}>
-                {isSplitting ? (
-                  <View style={styles.splittingButton}>
-                    <ActivityIndicator size="small" color={colors.gray.light[950]} />
-                    <Text style={styles.splittingText}>Splitting...</Text>
-                  </View>
-                ) : (
-                  <Button
-                    variant="tertiary"
-                    size="small"
-                    label="Split"
-                    leftIcon={BetweenHorizontalStart}
-                    onPress={onSplit}
-                    disabled={isSplitting}
-                  />
-                )}
-              </View>
-            )}
           </View>
         </View>
+
+        {/* Actions Bar - appears on hover in top right */}
+        {!completed && (isHovered || isSplitting || isRewriting || isAddingAfter) && (onSplit || onRewrite || onAddAfter) && (
+          <View style={styles.actionsBar}>
+            {isRewriting ? (
+              <View style={styles.actionButton}>
+                <ActivityIndicator size="small" color={colors.gray.light[600]} />
+              </View>
+            ) : onRewrite ? (
+              <TouchableOpacity
+                ref={rewriteButtonRef}
+                style={[styles.actionButton, rewriteHovered && styles.actionButtonHovered]}
+                onPress={onRewrite}
+                onMouseEnter={() => {
+                  setShowRewriteTooltip(true);
+                  setRewriteHovered(true);
+                }}
+                onMouseLeave={() => {
+                  setShowRewriteTooltip(false);
+                  setRewriteHovered(false);
+                }}
+                disabled={isSplitting || isRewriting || isAddingAfter}>
+                <Edit3
+                  size={18}
+                  color={colors.gray.light[600]}
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+            ) : null}
+            {isAddingAfter ? (
+              <View style={styles.actionButton}>
+                <ActivityIndicator size="small" color={colors.gray.light[600]} />
+              </View>
+            ) : onAddAfter ? (
+              <TouchableOpacity
+                ref={addAfterButtonRef}
+                style={[styles.actionButton, addAfterHovered && styles.actionButtonHovered]}
+                onPress={onAddAfter}
+                onMouseEnter={() => {
+                  setShowAddAfterTooltip(true);
+                  setAddAfterHovered(true);
+                }}
+                onMouseLeave={() => {
+                  setShowAddAfterTooltip(false);
+                  setAddAfterHovered(false);
+                }}
+                disabled={isSplitting || isRewriting || isAddingAfter}>
+                <Plus
+                  size={18}
+                  color={colors.gray.light[600]}
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+            ) : null}
+            {isSplitting ? (
+              <View style={styles.actionButton}>
+                <ActivityIndicator size="small" color={colors.gray.light[600]} />
+              </View>
+            ) : onSplit ? (
+              <TouchableOpacity
+                ref={splitButtonRef}
+                style={[styles.actionButton, splitHovered && styles.actionButtonHovered]}
+                onPress={onSplit}
+                onMouseEnter={() => {
+                  setShowSplitTooltip(true);
+                  setSplitHovered(true);
+                }}
+                onMouseLeave={() => {
+                  setShowSplitTooltip(false);
+                  setSplitHovered(false);
+                }}
+                disabled={isSplitting || isRewriting || isAddingAfter}>
+                <BetweenHorizontalStart
+                  size={18}
+                  color={colors.gray.light[600]}
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
       </View>
+
+      {/* Portal tooltips to document body */}
+      {showSplitTooltip && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: splitTooltipPosition.x,
+          top: splitTooltipPosition.y,
+          transform: 'translate(-50%, -100%)',
+          zIndex: 10000,
+          pointerEvents: 'none',
+        }}>
+          <View style={styles.tooltipPortal}>
+            <Text style={styles.tooltipText}>Split step</Text>
+          </View>
+        </div>,
+        document.body
+      )}
+
+      {showRewriteTooltip && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: rewriteTooltipPosition.x,
+          top: rewriteTooltipPosition.y,
+          transform: 'translate(-50%, -100%)',
+          zIndex: 10000,
+          pointerEvents: 'none',
+        }}>
+          <View style={styles.tooltipPortal}>
+            <Text style={styles.tooltipText}>Rewrite step</Text>
+          </View>
+        </div>,
+        document.body
+      )}
+
+      {showAddAfterTooltip && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: addAfterTooltipPosition.x,
+          top: addAfterTooltipPosition.y,
+          transform: 'translate(-50%, -100%)',
+          zIndex: 10000,
+          pointerEvents: 'none',
+        }}>
+          <View style={styles.tooltipPortal}>
+            <Text style={styles.tooltipText}>Add below</Text>
+          </View>
+        </div>,
+        document.body
+      )}
     </View>
   );
 };
@@ -117,15 +285,25 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     overflow: 'hidden',
     flexDirection: 'column',
-    gap: 20,
-    paddingBottom: 20,
+    gap: 8,
+    paddingTop: 20,
   },
   container: {
     alignSelf: 'stretch',
     flexDirection: 'row',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
-    gap: 12,
+    position: 'relative',
+  },
+  content: {
+    flex: 1,
+    flexDirection: 'column',
+    gap: 8,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   iconContainer: {
     width: 24,
@@ -145,53 +323,88 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  content: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-  },
-  textContainer: {
-    alignSelf: 'stretch',
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
   title: {
+    flex: 1,
     color: colors.gray.light[950],
     fontSize: 16,
     fontFamily: 'Inter',
     fontWeight: '500',
     lineHeight: 22.4,
   },
+  metadataContainer: {
+    flexDirection: 'column',
+    gap: 8,
+    paddingLeft: 32,
+  },
   completedTitle: {
     color: colors.gray.light[400],
     fontWeight: '400',
     textDecorationLine: 'line-through',
   },
-  buttonContainer: {
-    paddingTop: 4,
+  timeChip: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     alignItems: 'center',
-    gap: 10,
+    alignSelf: 'flex-start',
+    gap: 4,
+    backgroundColor: colors.indigo[50],
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 40,
   },
-  splittingButton: {
+  timeChipText: {
+    color: colors.indigo[600],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    lineHeight: 19.6,
+  },
+  actionsBar: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.gray.light[200],
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
+    // @ts-ignore
+    transition: 'background-color 0.15s ease',
+  },
+  actionButtonHovered: {
     backgroundColor: colors.gray.light[100],
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 38,
   },
-  splittingText: {
-    color: colors.gray.light[950],
-    fontSize: typography.body.base.fontSize,
-    fontFamily: typography.body.base.fontFamily,
-    fontWeight: String(typography.body.base.fontWeight) as any,
-    lineHeight: typography.body.base.lineHeight,
+  tooltipPortal: {
+    backgroundColor: colors.gray.light[900],
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    marginBottom: 8,
+  },
+  tooltipText: {
+    color: 'white',
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    fontWeight: String(typography.body.small.fontWeight) as any,
+    lineHeight: typography.body.small.lineHeight,
+    // @ts-ignore
+    whiteSpace: 'nowrap',
   },
   divider: {
     alignSelf: 'stretch',
@@ -202,15 +415,30 @@ const styles = StyleSheet.create({
   metadataItem: {
     alignSelf: 'stretch',
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  descriptionItem: {
+    alignSelf: 'stretch',
+    flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: 15,
+    paddingLeft: 2,
+  },
+  bulletDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.gray.light[600],
+    marginTop: 6,
   },
   metadataValue: {
     flex: 1,
     color: colors.gray.light[600],
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Inter',
     fontWeight: '400',
-    lineHeight: 22.4,
+    lineHeight: 19.6,
   },
 });
