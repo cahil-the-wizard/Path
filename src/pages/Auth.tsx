@@ -218,6 +218,16 @@ export const Auth: React.FC = () => {
                 <View style={styles.dividerLine} />
               </View>
 
+              {/* Name Input - only for signup */}
+              {mode === 'signup' && (
+                <TextInput
+                  placeholder="Name"
+                  value={name}
+                  onChangeText={setName}
+                  editable={!isLoading}
+                />
+              )}
+
               {/* Email Input */}
               <TextInput
                 placeholder="Email"
