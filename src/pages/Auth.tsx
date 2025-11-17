@@ -524,6 +524,8 @@ const styles = StyleSheet.create({
   confirmationContainer: {
     width: '100%',
     gap: 36,
+    flex: 1,
+    justifyContent: 'center',
   },
   confirmationTextContainer: {
     gap: 12,
