@@ -71,7 +71,12 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const {tasks, isLoading: loadingTasks, refreshTasks} = useTasks();
-  const {signOut} = useAuth();
+  const {signOut, userData} = useAuth();
+
+  // Get user's name and first initial for avatar
+  console.log('userData in Navbar:', userData);
+  const displayName = userData.name || 'User';
+  const userInitial = displayName.charAt(0).toUpperCase();
 
   // Extract current task ID prefix from URL if on task detail page
   const currentTaskSlug = location.pathname.startsWith('/task/')
@@ -263,11 +268,10 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               <TouchableOpacity
                 style={styles.userProfile}
                 onPress={() => setShowProfileMenu(!showProfileMenu)}>
-                <Image
-                  source={{uri: 'https://via.placeholder.com/34'}}
-                  style={styles.avatar}
-                />
-                <Text style={styles.userName}>Cahil Sankar</Text>
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>{userInitial}</Text>
+                </View>
+                <Text style={styles.userName}>{displayName}</Text>
               </TouchableOpacity>
             )}
           </Animated.View>
@@ -275,10 +279,9 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
             <TouchableOpacity
               style={styles.userProfileCollapsed}
               onPress={() => setShowProfileMenu(!showProfileMenu)}>
-              <Image
-                source={{uri: 'https://via.placeholder.com/34'}}
-                style={styles.avatar}
-              />
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>{userInitial}</Text>
+              </View>
             </TouchableOpacity>
           )}
 
@@ -463,7 +466,16 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 9999,
-    backgroundColor: '#D9D9D9',
+    backgroundColor: colors.indigo[500],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: 'white',
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    lineHeight: 20,
   },
   userName: {
     color: colors.gray.light[900],

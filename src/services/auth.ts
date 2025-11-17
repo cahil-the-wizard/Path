@@ -116,6 +116,14 @@ class AuthService {
     };
 
     this.setSession(session);
+
+    // Store user profile data
+    this.updateUserData({
+      name: credentials.name || '',
+      email: credentials.email,
+      avatarUrl: null,
+    });
+
     console.log('Sign up successful, JWT token set');
     return {
       session,
@@ -155,8 +163,42 @@ class AuthService {
     };
 
     this.setSession(session);
+
+    // Fetch user metadata from Supabase
+    const userMetadata = await this.fetchUserMetadata(authData.access_token);
+    this.updateUserData({
+      name: userMetadata?.name || '',
+      email: authData.user.email,
+      avatarUrl: null,
+    });
+
     console.log('Sign in successful, JWT token set');
     return session;
+  }
+
+  /**
+   * Fetches user metadata from Supabase
+   */
+  private async fetchUserMetadata(accessToken: string): Promise<{name?: string} | null> {
+    try {
+      const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': API_CONFIG.anonKey,
+        },
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch user metadata');
+        return null;
+      }
+
+      const userData = await response.json();
+      return userData.user_metadata || null;
+    } catch (error) {
+      console.error('Error fetching user metadata:', error);
+      return null;
+    }
   }
 
   /**
