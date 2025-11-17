@@ -360,11 +360,20 @@ const styles = StyleSheet.create({
     width: 120,
     height: 32,
     zIndex: 10,
+    '@media (max-width: 768px)': {
+      top: 20,
+      left: 20,
+      width: 100,
+      height: 27,
+    },
   },
   splitContainer: {
     flexDirection: 'row',
     height: '100%',
     width: '100%',
+    '@media (max-width: 768px)': {
+      flexDirection: 'column',
+    },
   },
   leftPanel: {
     flex: 1,
@@ -373,6 +382,11 @@ const styles = StyleSheet.create({
     paddingVertical: 64,
     justifyContent: 'center',
     alignItems: 'center',
+    '@media (max-width: 768px)': {
+      paddingLeft: 20,
+      paddingRight: 20,
+      paddingVertical: 32,
+    },
   },
   formContainer: {
     width: '100%',
@@ -493,6 +507,9 @@ const styles = StyleSheet.create({
     marginRight: 32,
     marginTop: 32,
     marginBottom: 32,
+    '@media (max-width: 768px)': {
+      display: 'none',
+    },
   },
   heroImage: {
     width: '100%',
