@@ -14,6 +14,7 @@ interface TextInputProps {
   editable?: boolean;
   onFocus?: () => void;
   onBlur?: () => void;
+  onSubmitEditing?: () => void;
   style?: any;
 }
 
@@ -28,6 +29,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   editable = true,
   onFocus,
   onBlur,
+  onSubmitEditing,
   style,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -66,6 +68,7 @@ export const TextInput: React.FC<TextInputProps> = ({
           editable={editable}
           onFocus={handleFocus}
           onBlur={handleBlur}
+          onSubmitEditing={onSubmitEditing}
         />
       </View>
       {showPasswordToggle && (

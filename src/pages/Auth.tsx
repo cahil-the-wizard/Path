@@ -225,6 +225,9 @@ export const Auth: React.FC = () => {
                   value={name}
                   onChangeText={setName}
                   editable={!isLoading}
+                  onSubmitEditing={() => {
+                    // Focus email input or submit if it's the last field
+                  }}
                 />
               )}
 
@@ -236,6 +239,9 @@ export const Auth: React.FC = () => {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!isLoading}
+                onSubmitEditing={() => {
+                  // Focus password input
+                }}
               />
 
               {/* Password Input */}
@@ -245,6 +251,7 @@ export const Auth: React.FC = () => {
                 onChangeText={setPassword}
                 secureTextEntry
                 editable={!isLoading}
+                onSubmitEditing={handleAuth}
               />
             </View>
 
