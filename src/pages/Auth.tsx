@@ -134,18 +134,20 @@ export const Auth: React.FC = () => {
 
   // Email confirmation content (shown on left side, replacing form)
   const renderEmailConfirmation = () => (
-    <View style={styles.confirmationContainer}>
-      <View style={styles.confirmationTextContainer}>
-        <Text style={styles.confirmationTitle}>Check your inbox</Text>
-        <Text style={styles.confirmationDescription}>
-          We've sent a confirmation link to{' '}
-          <Text style={styles.confirmationEmail}>{confirmationEmail}</Text>. Click the link to
-          verify your Path account.
-        </Text>
-        <Text style={styles.confirmationSubtext}>
-          Didn't receive the email? Check your spam folder or{' '}
-          <Text style={styles.confirmationLink}>contact support</Text>.
-        </Text>
+    <View style={styles.confirmationWrapper}>
+      <View style={styles.confirmationContainer}>
+        <View style={styles.confirmationTextContainer}>
+          <Text style={styles.confirmationTitle}>Check your inbox</Text>
+          <Text style={styles.confirmationDescription}>
+            We've sent a confirmation link to{' '}
+            <Text style={styles.confirmationEmail}>{confirmationEmail}</Text>. Click the link to
+            verify your Path account.
+          </Text>
+          <Text style={styles.confirmationSubtext}>
+            Didn't receive the email? Check your spam folder or{' '}
+            <Text style={styles.confirmationLink}>contact support</Text>.
+          </Text>
+        </View>
       </View>
 
       <View style={styles.confirmationFooter}>
@@ -513,11 +515,15 @@ const styles = StyleSheet.create({
     letterSpacing: -1.04,
   },
   // Email confirmation styles
-  confirmationContainer: {
+  confirmationWrapper: {
     width: '100%',
     maxWidth: 450,
+    height: '100%',
+    justifyContent: 'space-between',
+  },
+  confirmationContainer: {
+    width: '100%',
     gap: 36,
-    justifyContent: 'center',
   },
   confirmationTextContainer: {
     gap: 12,
@@ -554,9 +560,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+    paddingBottom: 62,
   },
 });
