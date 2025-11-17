@@ -132,48 +132,43 @@ export const Auth: React.FC = () => {
     }
   };
 
-  // If showing email confirmation screen
-  if (showEmailConfirmation) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.card}>
-            <View style={styles.header}>
-              <LogIn size={32} color={colors.indigo[600]} />
-              <Text style={styles.title}>Check your email</Text>
-              <Text style={styles.subtitle}>
-                We've sent a confirmation link to <Text style={styles.emailText}>{confirmationEmail}</Text>
-              </Text>
-            </View>
-
-            <View style={styles.confirmationContent}>
-              <Text style={styles.confirmationText}>
-                Click the link in the email to verify your account and get started with Path.
-              </Text>
-              <Text style={styles.confirmationSubtext}>
-                Didn't receive the email? Check your spam folder or contact support.
-              </Text>
-            </View>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Ready to sign in? </Text>
-              <Text
-                style={styles.footerLink}
-                onPress={() => {
-                  setShowEmailConfirmation(false);
-                  setMode('signin');
-                  setEmail('');
-                  setPassword('');
-                  setName('');
-                }}>
-                Sign in
-              </Text>
-            </View>
-          </View>
-        </View>
+  // Email confirmation content (shown on left side, replacing form)
+  const renderEmailConfirmation = () => (
+    <View style={styles.confirmationContainer}>
+      <View style={styles.confirmationTextContainer}>
+        <Text style={styles.confirmationTitle}>Check your inbox</Text>
+        <Text style={styles.confirmationDescription}>
+          We've sent a confirmation link to{' '}
+          <Text style={styles.confirmationEmail}>{confirmationEmail}</Text>. Click the link to
+          verify your Path account.
+        </Text>
+        <Text style={styles.confirmationSubtext}>
+          Didn't receive the email? Check your spam folder or{' '}
+          <Text style={styles.confirmationLink}>contact support</Text>.
+        </Text>
       </View>
-    );
-  }
+
+      <View style={styles.confirmationFooter}>
+        <Text style={styles.footerText}>Already have an account? </Text>
+        <TouchableOpacity
+          onPress={() => {
+            setShowEmailConfirmation(false);
+            setMode('signin');
+            setEmail('');
+            setPassword('');
+            setName('');
+          }}
+          style={styles.footerLinkContainer}>
+          <Text style={styles.footerLink}>Log in</Text>
+          <Image
+            source={{uri: '/assets/underline-scribble-02.svg'}}
+            style={styles.underlineScribble}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -186,9 +181,12 @@ export const Auth: React.FC = () => {
 
       {/* Split Screen Container */}
       <View style={styles.splitContainer}>
-        {/* Left Side - Form */}
+        {/* Left Side - Form or Confirmation */}
         <View style={styles.leftPanel}>
-          <View style={styles.formContainer}>
+          {showEmailConfirmation ? (
+            renderEmailConfirmation()
+          ) : (
+            <View style={styles.formContainer}>
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>Welcome to Path</Text>
@@ -299,6 +297,7 @@ export const Auth: React.FC = () => {
               </TouchableOpacity>
             </View>
           </View>
+          )}
         </View>
 
         {/* Right Side - Hero Image */}
@@ -514,45 +513,50 @@ const styles = StyleSheet.create({
     letterSpacing: -1.04,
   },
   // Email confirmation styles
-  content: {
-    height: '100%',
-    alignItems: 'center',
+  confirmationContainer: {
+    width: '100%',
+    maxWidth: 450,
+    gap: 36,
     justifyContent: 'center',
-    paddingHorizontal: 20,
   },
-  card: {
-    width: '100%',
-    maxWidth: 440,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 40,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+  confirmationTextContainer: {
+    gap: 12,
   },
-  emailText: {
-    fontWeight: '600',
-    color: colors.indigo[600],
+  confirmationTitle: {
+    fontSize: 32,
+    fontFamily: typography.title.subtitle.fontFamily,
+    fontWeight: '400',
+    color: colors.gray.light[800],
+    lineHeight: 38.4,
+    letterSpacing: -0.64,
   },
-  confirmationContent: {
-    width: '100%',
-    gap: 16,
-    paddingVertical: 24,
-  },
-  confirmationText: {
+  confirmationDescription: {
     fontSize: typography.body.base.fontSize,
     fontFamily: typography.body.base.fontFamily,
     color: colors.gray.light[700],
     lineHeight: typography.body.base.lineHeight,
-    textAlign: 'center',
+  },
+  confirmationEmail: {
+    fontWeight: '600',
+    color: colors.indigo[600],
   },
   confirmationSubtext: {
-    fontSize: typography.body.small.fontSize,
-    fontFamily: typography.body.small.fontFamily,
+    fontSize: typography.body.base.fontSize,
+    fontFamily: typography.body.base.fontFamily,
     color: colors.gray.light[500],
-    lineHeight: typography.body.small.lineHeight,
-    textAlign: 'center',
+    lineHeight: typography.body.base.lineHeight,
+  },
+  confirmationLink: {
+    textDecorationLine: 'underline',
+    textDecorationStyle: 'solid',
+  },
+  confirmationFooter: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   },
 });
