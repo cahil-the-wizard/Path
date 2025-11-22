@@ -4,6 +4,7 @@ import {BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate} from '
 import {Navbar} from './src/components/Navbar';
 import {NewTask} from './src/pages/NewTask';
 import {Today} from './src/pages/Today';
+import {TodayV2} from './src/pages/TodayV2';
 import {TaskDetail} from './src/pages/TaskDetail';
 import {TasksList} from './src/pages/TasksList';
 import {Auth} from './src/pages/Auth';
@@ -12,7 +13,7 @@ import {colors} from './src/theme/tokens';
 import {TasksProvider} from './src/contexts/TasksContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
 
-type Page = 'today' | 'newTask' | 'tasksList' | 'taskDetail' | 'settings';
+type Page = 'today' | 'todayV2' | 'newTask' | 'tasksList' | 'taskDetail' | 'settings';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -40,6 +41,7 @@ function AppContent(): React.JSX.Element {
 
   const getPageFromPath = (pathname: string): Page => {
     if (pathname === '/') return 'today';
+    if (pathname === '/today-v2') return 'todayV2';
     if (pathname === '/new-task') return 'newTask';
     if (pathname === '/tasks') return 'tasksList';
     if (pathname.startsWith('/task/')) return 'taskDetail';
@@ -49,6 +51,7 @@ function AppContent(): React.JSX.Element {
 
   const pageToPath: Record<Page, string> = {
     'today': '/',
+    'todayV2': '/today-v2',
     'newTask': '/new-task',
     'tasksList': '/tasks',
     'taskDetail': '/task',
@@ -85,6 +88,14 @@ function AppContent(): React.JSX.Element {
                 element={
                   <ProtectedRoute isAuthenticated={isAuthenticated}>
                     <Today />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/today-v2"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <TodayV2 />
                   </ProtectedRoute>
                 }
               />
