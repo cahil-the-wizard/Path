@@ -100,21 +100,25 @@ export const TaskDetail: React.FC = () => {
 
   const handleToggleStep = async (stepId: string, currentState: boolean) => {
     console.log('Toggle step clicked:', { stepId, currentState, newState: !currentState });
+
+    const newState = !currentState;
+
+    // Update local step state IMMEDIATELY for instant feedback
+    setSteps(prevSteps =>
+      prevSteps.map(step =>
+        step.id === stepId
+          ? {...step, is_completed: newState}
+          : step
+      )
+    );
+    console.log('Local step state updated immediately');
+
+    // Update backend in the background
     try {
       await apiClient.updateStep(stepId, {
-        is_completed: !currentState,
+        is_completed: newState,
       });
       console.log('Step updated successfully in database');
-
-      // Update local step state immediately for instant feedback
-      setSteps(prevSteps =>
-        prevSteps.map(step =>
-          step.id === stepId
-            ? {...step, is_completed: !currentState}
-            : step
-        )
-      );
-      console.log('Local step state updated');
 
       // Refresh task to get auto-complete status from backend
       // The backend automatically marks task as completed when all steps are done
@@ -128,9 +132,19 @@ export const TaskDetail: React.FC = () => {
       }
 
       // Also refresh task lists in the navbar
-      await refreshTasks();
+      refreshTasks();
     } catch (error) {
       console.error('Failed to update step:', error);
+
+      // Rollback the optimistic update on error
+      setSteps(prevSteps =>
+        prevSteps.map(step =>
+          step.id === stepId
+            ? {...step, is_completed: currentState}
+            : step
+        )
+      );
+
       Alert.alert(
         'Error',
         error instanceof Error ? error.message : 'Failed to update step'
@@ -528,6 +542,7 @@ const styles = StyleSheet.create({
   },
   stepsList: {
     flex: 1,
+    paddingBottom: 32,
   },
   loadingContainer: {
     flex: 1,

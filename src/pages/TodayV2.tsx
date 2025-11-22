@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, Easing} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {Sun, Timer, MoreHorizontal} from 'lucide-react-native';
 import {Chip} from '../components/Chip';
@@ -20,12 +20,15 @@ export const TodayV2: React.FC = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showGreenStroke, setShowGreenStroke] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const strokeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Only refresh when component mounts
     refreshTasksSummary();
-  }, [refreshTasksSummary]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleTaskPress = (taskId: string, taskTitle: string) => {
     const slug = generateTaskSlug(taskTitle, taskId);
@@ -60,16 +63,24 @@ export const TodayV2: React.FC = () => {
 
     setIsAnimating(true);
 
-    // Animate slide + fade out
+    // Animate slide + rotate + fade out
     Animated.parallel([
       Animated.timing(slideAnim, {
-        toValue: -40,
-        duration: 300,
+        toValue: -150,
+        duration: 400,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: -5,
+        duration: 400,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 300,
+        duration: 400,
+        easing: Easing.bezier(0.25, 0.1, 0.25, 1),
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -89,6 +100,7 @@ export const TodayV2: React.FC = () => {
       }
 
       slideAnim.setValue(0);
+      rotateAnim.setValue(0);
       fadeAnim.setValue(1);
       setIsAnimating(false);
     });
@@ -113,16 +125,24 @@ export const TodayV2: React.FC = () => {
       duration: 200,
       useNativeDriver: false,
     }).start(() => {
-      // Step 2: Slide + fade out after green stroke appears
+      // Step 2: Slide + rotate + fade out after green stroke appears
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: -40,
-          duration: 300,
+          toValue: -150,
+          duration: 400,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotateAnim, {
+          toValue: -5,
+          duration: 400,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
           useNativeDriver: true,
         }),
         Animated.timing(fadeAnim, {
           toValue: 0,
-          duration: 300,
+          duration: 400,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
           useNativeDriver: true,
         }),
       ]).start(async () => {
@@ -160,25 +180,20 @@ export const TodayV2: React.FC = () => {
 
         // Reset animations immediately so next card appears
         slideAnim.setValue(0);
+        rotateAnim.setValue(0);
         fadeAnim.setValue(1);
         strokeAnim.setValue(0);
         setShowGreenStroke(false);
         setIsAnimating(false);
 
-        // Step 4: Update backend in the background (don't wait)
-        try {
-          console.log('Updating step:', stepId);
-
-          // Mark the step as complete in the background
-          await apiClient.updateStep(stepId, {
-            is_completed: true,
-          });
-
-          console.log('Step updated successfully');
-
-          // Refresh tasks in background to sync state
-          refreshTasksSummary();
-        } catch (error) {
+        // Step 4: Update backend in the background (don't wait for UI)
+        apiClient.updateStep(stepId, {
+          is_completed: true,
+        }).then(() => {
+          console.log('Step updated successfully in backend');
+          // Optionally refresh in background without blocking UI
+          // We don't call refreshTasksSummary here because it triggers isLoading
+        }).catch((error) => {
           console.error('Failed to mark step as complete:', error);
 
           // Rollback: remove from completed
@@ -192,7 +207,7 @@ export const TodayV2: React.FC = () => {
 
           // Show user-friendly error
           alert(`Failed to complete step: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again.`);
-        }
+        });
       });
     });
   };
@@ -281,6 +296,11 @@ export const TodayV2: React.FC = () => {
                     outputRange: [colors.gray.light[300], '#49A478'],
                   });
 
+                  const rotation = rotateAnim.interpolate({
+                    inputRange: [-5, 0],
+                    outputRange: ['-5deg', '0deg'],
+                  });
+
                   return (
                     <Animated.View
                       key={index}
@@ -291,7 +311,7 @@ export const TodayV2: React.FC = () => {
                           left: index * 8,
                           zIndex: 3 - index,
                           opacity: !hasTask ? 0 : index === 0 ? fadeAnim : 0.6,
-                          transform: index === 0 ? [{translateX: slideAnim}] : [],
+                          transform: index === 0 ? [{translateX: slideAnim}, {rotate: rotation}] : [],
                           borderColor: index === 0 && showGreenStroke ? borderColor : colors.gray.light[300],
                           borderWidth: index === 0 && showGreenStroke ? 2 : 1,
                         },
@@ -415,8 +435,8 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'flex-start',
     alignItems: 'center',
-    gap: 28,
-    marginTop: 64,
+    gap: 40,
+    marginTop: 40,
   },
   stackedCardsContainer: {
     width: '100%',

@@ -86,8 +86,10 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const currentTaskIdPrefix = currentTaskSlug ? getTaskIdFromSlug(currentTaskSlug) : null;
 
   useEffect(() => {
+    // Only refresh when component mounts or when user changes
     refreshTasks();
-  }, [refreshTasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = async () => {
     try {
