@@ -1,10 +1,11 @@
 import React, {useState, useRef, useEffect} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking} from 'react-native';
 import {createPortal} from 'react-dom';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3} from 'lucide-react-native';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, Link} from 'lucide-react-native';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
+import type {StepMetadata} from '../types/backend';
 
 interface StepProps {
   title: string;
@@ -12,6 +13,7 @@ interface StepProps {
   timeEstimate?: string;
   completionCue?: string;
   completed?: boolean;
+  metadata?: StepMetadata[];
   onToggle?: () => void;
   onSplit?: () => void;
   onRewrite?: () => void;
@@ -27,6 +29,7 @@ export const Step: React.FC<StepProps> = ({
   timeEstimate,
   completionCue,
   completed = false,
+  metadata,
   onToggle,
   onSplit,
   onRewrite,
@@ -61,6 +64,10 @@ export const Step: React.FC<StepProps> = ({
   };
 
   const descriptionItems = parseDescription(description);
+
+  // Find helpful links metadata
+  const helpfulLinksMetadata = metadata?.find(m => m.field === 'helpful_links');
+  const helpfulLinks = helpfulLinksMetadata?.value?.links || [];
 
   // Update tooltip positions when buttons are hovered
   useEffect(() => {
@@ -130,6 +137,26 @@ export const Step: React.FC<StepProps> = ({
                 ))}
               </>
             )}
+
+            {/* Helpful Links */}
+            {!completed && helpfulLinks.length > 0 && (
+              <View style={styles.helpfulLinksContainer}>
+                {helpfulLinks.slice(0, 2).map((link, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.linkCard}
+                    onPress={() => Linking.openURL(link.url)}
+                    activeOpacity={0.7}>
+                    <Link size={14} color={colors.gray.light[400]} strokeWidth={1.5} />
+                    <View style={styles.linkContent}>
+                      <Text style={styles.linkTitle}>{link.title}</Text>
+                      <Text style={styles.linkReason} numberOfLines={2}>{link.relevance_reason}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
             {!completed && timeEstimate && (
               <View style={styles.timeChip}>
                 <Clock size={14} color={colors.indigo[600]} strokeWidth={1.5} />
@@ -440,5 +467,40 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '400',
     lineHeight: 19.6,
+  },
+  helpfulLinksContainer: {
+    gap: 8,
+  },
+  linkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    backgroundColor: colors.gray.light[50],
+    borderWidth: 1,
+    borderColor: colors.gray.light[200],
+    borderRadius: 8,
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
+    // @ts-ignore
+    transition: 'all 0.2s ease',
+  },
+  linkContent: {
+    flex: 1,
+    gap: 4,
+  },
+  linkTitle: {
+    color: colors.gray.light[900],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    lineHeight: 19.6,
+  },
+  linkReason: {
+    color: colors.gray.light[600],
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    lineHeight: 16.8,
   },
 });

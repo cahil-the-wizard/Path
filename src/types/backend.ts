@@ -28,11 +28,23 @@ export interface Step {
   completed_at: string | null;
 }
 
+export interface HelpfulLink {
+  url: string;
+  title: string;
+  relevance_reason: string;
+  source: 'ai_recommendation' | 'web_search';
+}
+
+export interface HelpfulLinksMetadata {
+  enriched_at: string;
+  links: HelpfulLink[];
+}
+
 export interface StepMetadata {
   id: string;
   step_id: string;
-  field: string;
-  value: any;
+  field: 'helpful_links';
+  value: HelpfulLinksMetadata;
   created_at: string;
 }
 
@@ -62,6 +74,7 @@ export interface TaskSummary {
   next_step: {
     id: string;
     title: string;
+    description: string;
     time_estimate: string;
   } | null;
 }
@@ -88,6 +101,7 @@ export interface UpdateTaskResponse {
 
 export interface UpdateStepResponse {
   step: Step;
+  enrichment_queue_id?: string | null;
 }
 
 export interface AddStepResponse {

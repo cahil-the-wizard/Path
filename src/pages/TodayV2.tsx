@@ -3,6 +3,7 @@ import {View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Animated, E
 import {PageHeader} from '../components/PageHeader';
 import {Sun, Timer, MoreHorizontal} from 'lucide-react-native';
 import {Chip} from '../components/Chip';
+import {TaskDetailSlideout} from '../components/TaskDetailSlideout';
 import {colors, typography} from '../theme/tokens';
 import {useNavigate} from 'react-router-dom';
 import {useTasks} from '../contexts/TasksContext';
@@ -19,6 +20,9 @@ export const TodayV2: React.FC = () => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showGreenStroke, setShowGreenStroke] = useState(false);
+  const [isCardHovered, setIsCardHovered] = useState(false);
+  const [showSlideout, setShowSlideout] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const slideAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -33,6 +37,14 @@ export const TodayV2: React.FC = () => {
   const handleTaskPress = (taskId: string, taskTitle: string) => {
     const slug = generateTaskSlug(taskTitle, taskId);
     navigate(`/task/${slug}`);
+  };
+
+  const handleCardPress = () => {
+    const currentTask = getCurrentStep();
+    if (currentTask?.id) {
+      setSelectedTaskId(currentTask.id);
+      setShowSlideout(true);
+    }
   };
 
   // Get all available tasks (completed tasks are filtered out)
@@ -229,6 +241,10 @@ export const TodayV2: React.FC = () => {
 
   const currentTask = getCurrentStep();
 
+  // Debug: Log the current task data
+  console.log('Current task data:', currentTask);
+  console.log('Next step:', currentTask?.next_step);
+
   // Get remaining tasks for stacking effect
   const remainingTasks = getTaskRotation();
 
@@ -301,21 +317,29 @@ export const TodayV2: React.FC = () => {
                     outputRange: ['-5deg', '0deg'],
                   });
 
-                  return (
-                    <Animated.View
-                      key={index}
-                      style={[
-                        styles.stackedCard,
-                        {
-                          top: index * 8,
-                          left: index * 8,
-                          zIndex: 3 - index,
-                          opacity: !hasTask ? 0 : index === 0 ? fadeAnim : 0.6,
-                          transform: index === 0 ? [{translateX: slideAnim}, {rotate: rotation}] : [],
-                          borderColor: index === 0 && showGreenStroke ? borderColor : colors.gray.light[300],
-                          borderWidth: index === 0 && showGreenStroke ? 2 : 1,
-                        },
-                      ]}>
+                  if (index === 0) {
+                    return (
+                      <Animated.View
+                        key={index}
+                        style={[
+                          styles.stackedCard,
+                          {
+                            top: index * 8,
+                            left: index * 8,
+                            zIndex: 3 - index,
+                            opacity: !hasTask ? 0 : fadeAnim,
+                            transform: [{translateX: slideAnim}, {rotate: rotation}],
+                            borderColor: showGreenStroke ? borderColor : colors.gray.light[300],
+                            borderWidth: showGreenStroke ? 2 : 1,
+                            backgroundColor: isCardHovered ? colors.gray.light[50] : 'white',
+                          },
+                        ]}>
+                        <TouchableOpacity
+                          onPress={handleCardPress}
+                          onMouseEnter={() => setIsCardHovered(true)}
+                          onMouseLeave={() => setIsCardHovered(false)}
+                          activeOpacity={1}
+                          style={styles.cardTouchable}>
                       {index === 0 && currentTask && (
                         <>
                           {/* Header */}
@@ -330,17 +354,34 @@ export const TodayV2: React.FC = () => {
 
                           {/* Content */}
                           <View style={styles.cardContent}>
-                            <Text style={styles.stepTitle}>
+                            <Text style={styles.stepTitle} numberOfLines={1}>
                               {currentTask.next_step?.title || 'No steps yet'}
                             </Text>
-                            <Text style={styles.description}>
-                              {currentTask.next_step?.description || 'Start working on this task'}
+                            <Text style={styles.description} numberOfLines={2}>
+                              {(currentTask.next_step as any)?.description || 'Take the first step towards completing this task.'}
                             </Text>
                           </View>
                         </>
                       )}
-                    </Animated.View>
-                  );
+                        </TouchableOpacity>
+                      </Animated.View>
+                    );
+                  } else {
+                    return (
+                      <Animated.View
+                        key={index}
+                        style={[
+                          styles.stackedCard,
+                          {
+                            top: index * 8,
+                            left: index * 8,
+                            zIndex: 3 - index,
+                            opacity: !hasTask ? 0 : 0.6,
+                          },
+                        ]}
+                      />
+                    );
+                  }
                 })}
               </View>
 
@@ -361,6 +402,19 @@ export const TodayV2: React.FC = () => {
           )}
         </View>
       </View>
+
+      {/* Task Detail Slideout */}
+      <TaskDetailSlideout
+        visible={showSlideout}
+        taskId={selectedTaskId}
+        onClose={() => {
+          setShowSlideout(false);
+          setSelectedTaskId(null);
+        }}
+        onOpenFullView={(taskId, taskTitle) => {
+          handleTaskPress(taskId, taskTitle);
+        }}
+      />
     </View>
   );
 };
@@ -454,6 +508,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.gray.light[300],
+    flexDirection: 'column',
+    gap: 12,
+    cursor: 'pointer',
+  },
+  cardTouchable: {
+    width: '100%',
+    height: '100%',
     flexDirection: 'column',
     gap: 12,
   },

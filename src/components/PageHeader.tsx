@@ -7,6 +7,7 @@ import {Button} from './Button';
 interface PageHeaderProps {
   title: string;
   icon?: LucideIcon;
+  leftAction?: React.ReactNode;
   actions?: React.ReactNode;
   showBorderOnScroll?: boolean;
 }
@@ -14,6 +15,7 @@ interface PageHeaderProps {
 export const PageHeader: React.FC<PageHeaderProps> = ({
   title,
   icon: Icon,
+  leftAction,
   actions,
   showBorderOnScroll = false,
 }) => {
@@ -34,11 +36,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <View style={[styles.container, showBorder && styles.containerWithBorder]}>
       <View style={styles.leftSection}>
-        {Icon && (
+        {leftAction || (Icon && (
           <View style={styles.iconContainer}>
             <Icon size={18} color={colors.gray.light[800]} strokeWidth={1.5} />
           </View>
-        )}
+        ))}
         <Text style={styles.title}>{title}</Text>
       </View>
       {actions && (

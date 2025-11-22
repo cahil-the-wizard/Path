@@ -485,6 +485,7 @@ export const TaskDetail: React.FC = () => {
                     timeEstimate={step.time_estimate}
                     completionCue={step.completion_cue}
                     completed={step.is_completed}
+                    metadata={step.metadata}
                     onToggle={() => handleToggleStep(step.id, step.is_completed)}
                     onSplit={() => handleSplitStep(step.id)}
                     onRewrite={() => handleRewriteStepClick(step.id, step.title)}

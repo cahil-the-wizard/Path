@@ -238,6 +238,48 @@ class ApiClient {
     });
   }
 
+  async pollEnrichmentStatus(
+    queueId: string,
+    onComplete?: (result: QueueStatus['result']) => void,
+    onError?: (error: string) => void
+  ): Promise<QueueStatus> {
+    const maxAttempts = 30; // 30 seconds max
+    let attempts = 0;
+
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        attempts++;
+
+        try {
+          const status = await this.getQueueStatus(queueId);
+
+          if (status.status === 'complete') {
+            clearInterval(interval);
+            if (onComplete) onComplete(status.result);
+            resolve(status);
+          } else if (status.status === 'failed') {
+            clearInterval(interval);
+            const errorMsg = status.error_message || 'Enrichment failed';
+            if (onError) onError(errorMsg);
+            reject(new Error(errorMsg));
+          } else if (attempts >= maxAttempts) {
+            clearInterval(interval);
+            const timeoutMsg = 'Enrichment timeout - may still be processing';
+            console.warn(timeoutMsg);
+            if (onError) onError(timeoutMsg);
+            reject(new Error(timeoutMsg));
+          }
+        } catch (error) {
+          console.error('Error polling enrichment status:', error);
+          clearInterval(interval);
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          if (onError) onError(errorMsg);
+          reject(error);
+        }
+      }, 1000); // Poll every second
+    });
+  }
+
   // Summary operations
   async getTasksSummary(params?: GetTasksSummaryParams): Promise<GetTasksSummaryResponse> {
     const queryParams = new URLSearchParams();
