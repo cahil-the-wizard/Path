@@ -48,7 +48,7 @@ export const Today: React.FC = () => {
 
             {isLoading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.indigo[600]} />
+                <ActivityIndicator size="large" color={colors.green[600]} />
               </View>
             ) : tasks.length === 0 ? (
               <View style={styles.emptyContainer}>
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     color: colors.gray.light[500],
   },
   headingIndigo: {
-    color: colors.indigo[600],
+    color: colors.green[600],
   },
   headingDark: {
     color: colors.gray.light[900],

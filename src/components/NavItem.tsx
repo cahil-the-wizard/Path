@@ -21,8 +21,8 @@ export const NavItem: React.FC<NavItemProps> = ({
   textOpacity,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const iconColor = active ? colors.indigo[600] : colors.gray.light[950];
-  const textColor = active ? colors.indigo[600] : colors.gray.light[950];
+  const iconColor = active ? colors.green[600] : colors.gray.light[950];
+  const textColor = active ? colors.green[600] : colors.gray.light[950];
 
   return (
     <TouchableOpacity
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   activeContainer: {
-    backgroundColor: colors.indigo[100],
+    backgroundColor: colors.green[100],
     borderRadius: 8,
   },
   hoverContainer: {

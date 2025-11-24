@@ -212,7 +212,7 @@ export const TasksList: React.FC = () => {
       <View style={styles.container}>
         <PageHeader title="Tasks" icon={CircleCheckBig} />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.indigo[600]} />
+          <ActivityIndicator size="large" color={colors.green[600]} />
         </View>
       </View>
     );
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     cursor: 'pointer',
   },
   filterTabActive: {
-    backgroundColor: colors.indigo[500],
+    backgroundColor: colors.green[500],
   },
   filterTabText: {
     color: colors.gray.light[950],

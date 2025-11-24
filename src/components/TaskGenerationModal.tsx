@@ -53,7 +53,7 @@ export const TaskGenerationModal: React.FC<TaskGenerationModalProps> = ({
         <View style={styles.modal}>
           <View style={styles.iconContainer}>
             <View style={styles.iconBackground}>
-              <Sparkles size={32} color={colors.indigo[600]} strokeWidth={1.5} />
+              <Sparkles size={32} color={colors.green[600]} strokeWidth={1.5} />
             </View>
           </View>
 
@@ -62,7 +62,7 @@ export const TaskGenerationModal: React.FC<TaskGenerationModalProps> = ({
             <Text style={styles.message}>{loadingMessages[messageIndex]}</Text>
           </View>
 
-          <ActivityIndicator size="large" color={colors.indigo[600]} style={styles.loader} />
+          <ActivityIndicator size="large" color={colors.green[600]} style={styles.loader} />
 
           <View style={styles.progressBar}>
             <View
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.indigo[100],
+    backgroundColor: colors.green[100],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.indigo[600],
+    backgroundColor: colors.green[600],
     borderRadius: 2,
     transition: 'width 0.3s ease',
   },

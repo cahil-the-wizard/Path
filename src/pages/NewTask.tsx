@@ -117,7 +117,7 @@ export const NewTask: React.FC = () => {
                       {isLoading && (
                         <ActivityIndicator
                           size="small"
-                          color={colors.indigo[600]}
+                          color={colors.green[600]}
                           style={styles.loader}
                         />
                       )}

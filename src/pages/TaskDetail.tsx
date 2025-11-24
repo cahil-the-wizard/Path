@@ -388,7 +388,7 @@ export const TaskDetail: React.FC = () => {
         <PageHeader title="Loading..." icon={CircleCheckBig} />
         <View style={styles.content}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.indigo[600]} />
+            <ActivityIndicator size="large" color={colors.green[600]} />
           </View>
         </View>
       </View>

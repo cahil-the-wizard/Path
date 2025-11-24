@@ -48,7 +48,7 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({collapsed, onPress, active
         active && styles.addTaskButtonActive,
         !active && isHovered && styles.addTaskButtonHover,
       ]}>
-      <CirclePlus size={18} color={colors.indigo[600]} strokeWidth={1.5} />
+      <CirclePlus size={18} color={colors.green[600]} strokeWidth={1.5} />
       {!collapsed && (
         <Animated.View style={{opacity: textOpacity}}>
           <Text style={styles.addTaskText}>Add task</Text>
@@ -210,7 +210,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
             />
             <NavItem
               label="Today V2"
-              icon={Sparkles}
+              icon={Sun}
               active={currentPage === 'todayV2'}
               collapsed={collapsed}
               onPress={() => onNavigate('todayV2')}
@@ -246,7 +246,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               <ScrollView style={styles.tasksList}>
                 {loadingTasks ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color={colors.indigo[600]} />
+                    <ActivityIndicator size="small" color={colors.green[600]} />
                   </View>
                 ) : tasks.length === 0 ? (
                   <View style={styles.emptyContainer}>
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   addTaskButtonActive: {
-    backgroundColor: colors.indigo[100],
+    backgroundColor: colors.green[100],
     borderRadius: 8,
   },
   addTaskButtonHover: {
@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   addTaskText: {
-    color: colors.indigo[600],
+    color: colors.green[600],
     fontSize: typography.body.small.fontSize,
     fontFamily: typography.body.small.fontFamily,
     fontWeight: String(typography.body.small.fontWeight) as any,
@@ -478,7 +478,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 9999,
-    backgroundColor: colors.indigo[500],
+    backgroundColor: colors.green[500],
     justifyContent: 'center',
     alignItems: 'center',
   },

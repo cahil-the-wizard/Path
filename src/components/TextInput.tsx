@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   containerFocused: {
-    borderColor: colors.indigo[500],
+    borderColor: colors.green[500],
   },
   inputWrapper: {
     flex: 1,

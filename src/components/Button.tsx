@@ -127,7 +127,7 @@ const getButtonStyles = (
       return {
         container: {
           ...baseContainer,
-          backgroundColor: colors.indigo[500],
+          backgroundColor: colors.green[500],
           paddingVertical: padding,
           paddingHorizontal: 12,
         },
@@ -141,7 +141,7 @@ const getButtonStyles = (
       return {
         container: {
           ...baseContainer,
-          backgroundColor: colors.indigo[700],
+          backgroundColor: colors.green[700],
           paddingVertical: padding,
           paddingHorizontal: 12,
         },
@@ -268,7 +268,7 @@ const getButtonStyles = (
       return {
         container: {
           ...baseContainer,
-          backgroundColor: colors.indigo[500],
+          backgroundColor: colors.green[500],
           paddingVertical: padding,
           paddingHorizontal: 12,
         },

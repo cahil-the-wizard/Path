@@ -14,9 +14,9 @@ interface ChipProps {
 
 const chipColors = {
   indigo: {
-    background: colors.indigo[50],
-    text: colors.indigo[600],
-    icon: colors.indigo[600],
+    background: colors.green[50],
+    text: colors.green[600],
+    icon: colors.green[600],
   },
   success: {
     background: colors.success[50],

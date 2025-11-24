@@ -159,7 +159,7 @@ export const Step: React.FC<StepProps> = ({
 
             {!completed && timeEstimate && (
               <View style={styles.timeChip}>
-                <Clock size={14} color={colors.indigo[600]} strokeWidth={1.5} />
+                <Clock size={14} color={colors.green[600]} strokeWidth={1.5} />
                 <Text style={styles.timeChipText}>{timeEstimate}</Text>
               </View>
             )}
@@ -373,13 +373,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 4,
-    backgroundColor: colors.indigo[50],
+    backgroundColor: colors.green[50],
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 40,
   },
   timeChipText: {
-    color: colors.indigo[600],
+    color: colors.green[600],
     fontSize: 14,
     fontFamily: 'Inter',
     fontWeight: '400',

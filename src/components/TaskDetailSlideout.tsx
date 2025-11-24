@@ -292,7 +292,7 @@ export const TaskDetailSlideout: React.FC<TaskDetailSlideoutProps> = ({
             <View style={styles.content}>
             {isLoading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.indigo[600]} />
+                <ActivityIndicator size="large" color={colors.green[600]} />
               </View>
             ) : steps.length === 0 ? (
               <Text style={styles.emptyText}>No steps yet</Text>

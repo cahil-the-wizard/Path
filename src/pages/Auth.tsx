@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity, Animated, useWindowDimensions} from 'react-native';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
+import {Toast} from '../components/Toast';
 import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator';
 import {LogIn} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
@@ -17,6 +18,7 @@ export const Auth: React.FC = () => {
   const [showPasswordStrength, setShowPasswordStrength] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
+  const [showAccountExistsToast, setShowAccountExistsToast] = useState(false);
   const navigate = useNavigate();
   const {signIn, signUp, updateUserData} = useAuth();
   const {width} = useWindowDimensions();
@@ -92,6 +94,14 @@ export const Auth: React.FC = () => {
           name: name.trim(),
         });
 
+        // Check if account already exists
+        if (result.accountAlreadyExists) {
+          console.log('Account already exists - showing toast');
+          setShowAccountExistsToast(true);
+          setIsLoading(false);
+          return;
+        }
+
         // Check if email confirmation is required
         if (result.requiresEmailConfirmation) {
           setConfirmationEmail(result.email);
@@ -125,10 +135,8 @@ export const Auth: React.FC = () => {
         navigate('/');
       }
     } catch (error) {
-      Alert.alert(
-        'Error',
-        error instanceof Error ? error.message : 'Authentication failed'
-      );
+      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -193,9 +201,13 @@ export const Auth: React.FC = () => {
             <View style={styles.formContainer}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>Welcome to Path</Text>
+              <Text style={styles.title}>
+                {mode === 'signin' ? 'Welcome back' : 'Welcome to Path'}
+              </Text>
               <Text style={styles.subtitle}>
-                Your first step toward progress starts here.
+                {mode === 'signin'
+                  ? 'Sign in to continue your journey.'
+                  : 'Your first step toward progress starts here.'}
               </Text>
             </View>
 
@@ -347,6 +359,18 @@ export const Auth: React.FC = () => {
         </View>
         )}
       </View>
+
+      {/* Toast Notification */}
+      <Toast
+        visible={showAccountExistsToast}
+        message="You already have an account."
+        actionText="Log in"
+        onAction={() => {
+          setShowAccountExistsToast(false);
+          setMode('signin');
+        }}
+        onClose={() => setShowAccountExistsToast(false)}
+      />
     </View>
   );
 };
@@ -456,7 +480,7 @@ const styles = StyleSheet.create({
     lineHeight: typography.body.small.lineHeight,
   },
   signUpButton: {
-    backgroundColor: colors.indigo[500],
+    backgroundColor: colors.green[500],
     paddingVertical: 12,
     paddingHorizontal: 12,
     borderRadius: 38,
@@ -567,7 +591,7 @@ const styles = StyleSheet.create({
   },
   confirmationEmail: {
     fontWeight: '600',
-    color: colors.indigo[600],
+    color: colors.green[600],
   },
   confirmationSubtext: {
     fontSize: typography.body.base.fontSize,

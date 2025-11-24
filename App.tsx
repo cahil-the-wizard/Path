@@ -33,7 +33,7 @@ function AppContent(): React.JSX.Element {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.indigo[600]} />
+          <ActivityIndicator size="large" color={colors.green[600]} />
         </View>
       </SafeAreaView>
     );

@@ -11,6 +11,7 @@ export interface SignUpResult {
   session?: AuthSession;
   requiresEmailConfirmation: boolean;
   email: string;
+  accountAlreadyExists?: boolean;
 }
 
 export interface SignUpCredentials {
@@ -41,6 +42,7 @@ interface SupabaseAuthResponse {
   id?: string;
   email?: string;
   confirmation_sent_at?: string;
+  identities?: any[];
   user_metadata?: {
     email_verified?: boolean;
   };
@@ -87,7 +89,18 @@ class AuthService {
     console.log('Response keys:', Object.keys(authData));
     console.log('Has access_token:', !!authData.access_token);
     console.log('Has confirmation_sent_at:', !!authData.confirmation_sent_at);
+    console.log('Identities array:', authData.identities);
     console.log('User object:', authData.user);
+
+    // Check if this is an existing account trying to sign up again
+    // When an existing account signs up again, Supabase returns:
+    // - confirmation_sent_at is present
+    // - identities array is empty []
+    const accountAlreadyExists = authData.confirmation_sent_at !== undefined &&
+                                  Array.isArray(authData.identities) &&
+                                  authData.identities.length === 0;
+
+    console.log('Account already exists:', accountAlreadyExists);
 
     // When email confirmation is required, Supabase returns different response structures:
     // 1. No access_token in response
@@ -104,6 +117,7 @@ class AuthService {
       return {
         requiresEmailConfirmation: true,
         email: credentials.email,
+        accountAlreadyExists,
       };
     }
 

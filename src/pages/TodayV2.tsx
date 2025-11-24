@@ -224,12 +224,15 @@ export const TodayV2: React.FC = () => {
     });
   };
 
-  const handleLoadMoreSteps = () => {
+  const handleLoadMoreSteps = async () => {
     // Reset state to show more tasks
     setShowCelebration(false);
     setCurrentIndex(0);
     setSkippedSteps([]);
-    // Keep completed steps so we don't show them again
+    setCompletedSteps(new Set()); // Clear completed steps to show fresh tasks
+
+    // Refresh task summary to get the next steps
+    await refreshTasksSummary();
   };
 
   const today = new Date();
@@ -271,22 +274,30 @@ export const TodayV2: React.FC = () => {
             </View>
 
             <Text style={styles.heading}>
-              <Text style={styles.headingGray}>Breathe easy.{'\n'}</Text>
-              <Text style={styles.headingDark}>{remainingTasks.length} steps to stay on track.</Text>
+              {showCelebration ? (
+                <>
+                  <Text style={styles.headingDark}>Small steps add up.{'\n'}</Text>
+                  <Text style={styles.headingGray}>You're building your path.</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.headingGray}>Breathe easy.{'\n'}</Text>
+                  <Text style={styles.headingDark}>{remainingTasks.length} steps to stay on track.</Text>
+                </>
+              )}
             </Text>
           </View>
 
           {/* Cards Section */}
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={colors.indigo[600]} />
+              <ActivityIndicator size="large" color={colors.green[600]} />
             </View>
           ) : showCelebration ? (
             <View style={styles.celebrationContainer}>
-              <Text style={styles.celebrationHeading}>Great work.</Text>
               <Text style={styles.celebrationSubheading}>
-                You completed your high-priority steps.{'\n'}
-                Do you have enough energy for a couple more?
+                The essential steps are done.{'\n'}
+                Want to keep going?
               </Text>
               <TouchableOpacity
                 style={styles.loadMoreButton}
@@ -309,7 +320,7 @@ export const TodayV2: React.FC = () => {
                   const hasTask = index < remainingTasks.length;
                   const borderColor = strokeAnim.interpolate({
                     inputRange: [0, 1],
-                    outputRange: [colors.gray.light[300], '#49A478'],
+                    outputRange: [colors.gray.light[300], colors.green[500]],
                   });
 
                   const rotation = rotateAnim.interpolate({
@@ -494,16 +505,16 @@ const styles = StyleSheet.create({
   },
   stackedCardsContainer: {
     width: '100%',
-    height: 183,
+    height: 216,
     position: 'relative',
   },
   stackedCard: {
     position: 'absolute',
     width: '100%',
-    height: 167,
+    height: 200,
     paddingTop: 32,
     paddingBottom: 40,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
     backgroundColor: 'white',
     borderRadius: 12,
     borderWidth: 1,
@@ -574,7 +585,7 @@ const styles = StyleSheet.create({
   completeButton: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#49A478',
+    backgroundColor: colors.green[500],
     borderRadius: 38,
     justifyContent: 'center',
     alignItems: 'center',
@@ -606,7 +617,7 @@ const styles = StyleSheet.create({
   },
   celebrationContainer: {
     width: '100%',
-    paddingTop: 100,
+    paddingTop: 40,
     alignItems: 'center',
     gap: 24,
   },
@@ -630,7 +641,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     paddingHorizontal: 24,
     paddingVertical: 14,
-    backgroundColor: colors.indigo[600],
+    backgroundColor: colors.green[600],
     borderRadius: 38,
     justifyContent: 'center',
     alignItems: 'center',
