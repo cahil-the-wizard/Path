@@ -39,6 +39,7 @@ export const TaskDetail: React.FC = () => {
   const [selectedStepForAdd, setSelectedStepForAdd] = useState<string | null>(null);
   const [isRewritingTask, setIsRewritingTask] = useState(false);
   const [isAddingStep, setIsAddingStep] = useState<string | null>(null);
+  const [enrichingSteps, setEnrichingSteps] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
@@ -115,10 +116,42 @@ export const TaskDetail: React.FC = () => {
 
     // Update backend in the background
     try {
-      await apiClient.updateStep(stepId, {
+      const response = await apiClient.updateStep(stepId, {
         is_completed: newState,
       });
       console.log('Step updated successfully in database');
+
+      // If there's an enrichment queue, poll for completion
+      if (response.enrichment_queue_id) {
+        // Mark step as enriching
+        setEnrichingSteps(prev => new Set(prev).add(stepId));
+
+        // Poll for enrichment completion
+        apiClient.pollEnrichmentStatus(
+          response.enrichment_queue_id,
+          async () => {
+            // On complete, refresh steps to get new metadata
+            if (task?.id) {
+              const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
+              setSteps(stepsResponse.steps);
+            }
+            // Remove from enriching set
+            setEnrichingSteps(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(stepId);
+              return newSet;
+            });
+          },
+          () => {
+            // On error, just remove from enriching set
+            setEnrichingSteps(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(stepId);
+              return newSet;
+            });
+          }
+        );
+      }
 
       // Refresh task to get auto-complete status from backend
       // The backend automatically marks task as completed when all steps are done
@@ -493,6 +526,7 @@ export const TaskDetail: React.FC = () => {
                     isSplitting={isSplitting === step.id}
                     isRewriting={isRewriting === step.id}
                     isAddingAfter={isAddingStep === step.id}
+                    isEnriching={enrichingSteps.has(step.id)}
                   />
                 ))
               )}

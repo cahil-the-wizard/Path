@@ -21,6 +21,7 @@ interface StepProps {
   isSplitting?: boolean;
   isRewriting?: boolean;
   isAddingAfter?: boolean;
+  isEnriching?: boolean;
 }
 
 export const Step: React.FC<StepProps> = ({
@@ -37,6 +38,7 @@ export const Step: React.FC<StepProps> = ({
   isSplitting = false,
   isRewriting = false,
   isAddingAfter = false,
+  isEnriching = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showSplitTooltip, setShowSplitTooltip] = useState(false);
@@ -138,8 +140,16 @@ export const Step: React.FC<StepProps> = ({
               </>
             )}
 
+            {/* Enriching Chip */}
+            {!completed && isEnriching && (
+              <View style={styles.enrichingChip}>
+                <ActivityIndicator size={12} color={colors.green[600]} />
+                <Text style={styles.enrichingChipText}>Finding helpful links</Text>
+              </View>
+            )}
+
             {/* Helpful Links */}
-            {!completed && helpfulLinks.length > 0 && (
+            {!completed && !isEnriching && helpfulLinks.length > 0 && (
               <Text style={styles.helpfulLinksText}>
                 Helpful links:{' '}
                 {helpfulLinks.map((link, index) => (
@@ -157,7 +167,7 @@ export const Step: React.FC<StepProps> = ({
 
             {!completed && timeEstimate && (
               <View style={styles.timeChip}>
-                <Clock size={14} color={colors.green[600]} strokeWidth={1.5} />
+                <Clock size={14} color={colors.gray.light[600]} strokeWidth={1.5} />
                 <Text style={styles.timeChipText}>{timeEstimate}</Text>
               </View>
             )}
@@ -371,13 +381,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: 4,
-    backgroundColor: colors.green[50],
+    backgroundColor: colors.gray.light[100],
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 40,
   },
   timeChipText: {
-    color: colors.green[600],
+    color: colors.gray.light[600],
     fontSize: 14,
     fontFamily: 'Inter',
     fontWeight: '400',
@@ -482,5 +492,22 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     // @ts-ignore - web-specific styles
     cursor: 'pointer',
+  },
+  enrichingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    backgroundColor: colors.green[50],
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 40,
+  },
+  enrichingChipText: {
+    color: colors.green[600],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    lineHeight: 19.6,
   },
 });
