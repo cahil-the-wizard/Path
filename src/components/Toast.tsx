@@ -87,13 +87,11 @@ export const Toast: React.FC<ToastProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'fixed',
+    position: 'absolute',
     bottom: 32,
-    left: '50%',
-    // @ts-ignore - web-specific
-    transform: 'translateX(-50%)',
-    maxWidth: 450,
-    width: '100%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
     paddingHorizontal: 20,
     zIndex: 1000,
   },
@@ -106,6 +104,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+    maxWidth: 450,
+    width: '100%',
   },
   textContainer: {
     flex: 1,

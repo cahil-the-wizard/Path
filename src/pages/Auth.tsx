@@ -194,7 +194,7 @@ export const Auth: React.FC = () => {
       {/* Split Screen Container */}
       <View style={[styles.splitContainer, isMobile && styles.splitContainerMobile]}>
         {/* Left Side - Form or Confirmation */}
-        <View style={[styles.leftPanel, isMobile && styles.leftPanelMobile]}>
+        <View style={[styles.leftPanel, isMobile && styles.leftPanelMobile, {position: 'relative'}]}>
           {showEmailConfirmation ? (
             renderEmailConfirmation()
           ) : (
@@ -314,6 +314,18 @@ export const Auth: React.FC = () => {
             </View>
           </View>
           )}
+
+          {/* Toast Notification - positioned within left panel */}
+          <Toast
+            visible={showAccountExistsToast}
+            message="You already have an account."
+            actionText="Log in"
+            onAction={() => {
+              setShowAccountExistsToast(false);
+              setMode('signin');
+            }}
+            onClose={() => setShowAccountExistsToast(false)}
+          />
         </View>
 
         {/* Right Side - Hero Image */}
@@ -359,18 +371,6 @@ export const Auth: React.FC = () => {
         </View>
         )}
       </View>
-
-      {/* Toast Notification */}
-      <Toast
-        visible={showAccountExistsToast}
-        message="You already have an account."
-        actionText="Log in"
-        onAction={() => {
-          setShowAccountExistsToast(false);
-          setMode('signin');
-        }}
-        onClose={() => setShowAccountExistsToast(false)}
-      />
     </View>
   );
 };

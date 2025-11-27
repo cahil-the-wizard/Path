@@ -59,10 +59,10 @@ class AuthService {
   private supabaseUrl = 'https://lorriepsrynzoakzmlie.supabase.co';
 
   /**
-   * Signs up a new user with email and password using Supabase Auth
+   * Signs up a new user with email and password using our custom edge function
    */
   async signUp(credentials: SignUpCredentials): Promise<SignUpResult> {
-    const response = await fetch(`${this.supabaseUrl}/auth/v1/signup`, {
+    const response = await fetch(`${this.supabaseUrl}/functions/v1/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -71,78 +71,57 @@ class AuthService {
       body: JSON.stringify({
         email: credentials.email,
         password: credentials.password,
-        data: {
-          name: credentials.name,
-        },
+        full_name: credentials.name,
       }),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error_description || error.msg || 'Sign up failed');
-    }
+    const data = await response.json();
 
-    const authData: SupabaseAuthResponse = await response.json();
-
-    // Debug: Log the full response to understand Supabase's behavior
-    console.log('Supabase signup response:', JSON.stringify(authData, null, 2));
-    console.log('Response keys:', Object.keys(authData));
-    console.log('Has access_token:', !!authData.access_token);
-    console.log('Has confirmation_sent_at:', !!authData.confirmation_sent_at);
-    console.log('Identities array:', authData.identities);
-    console.log('User object:', authData.user);
-
-    // Check if this is an existing account trying to sign up again
-    // When an existing account signs up again, Supabase returns:
-    // - confirmation_sent_at is present
-    // - identities array is empty []
-    const accountAlreadyExists = authData.confirmation_sent_at !== undefined &&
-                                  Array.isArray(authData.identities) &&
-                                  authData.identities.length === 0;
-
-    console.log('Account already exists:', accountAlreadyExists);
-
-    // When email confirmation is required, Supabase returns different response structures:
-    // 1. No access_token in response
-    // 2. confirmation_sent_at field present
-    // 3. User object with identities array empty (unconfirmed)
-    const requiresConfirmation = !authData.access_token ||
-                                  authData.confirmation_sent_at !== undefined ||
-                                  (authData.user && !authData.user.email_confirmed_at);
-
-    console.log('Requires confirmation:', requiresConfirmation);
-
-    if (requiresConfirmation) {
-      console.log('Email confirmation required - confirmation email sent');
+    // Handle account already exists
+    if (data.error === 'account_exists') {
       return {
-        requiresEmailConfirmation: true,
+        requiresEmailConfirmation: false,
         email: credentials.email,
-        accountAlreadyExists,
+        accountAlreadyExists: true,
       };
     }
 
-    // At this point, we have access_token and user data
-    // Use the Supabase JWT directly - no custom session needed!
-    const session: AuthSession = {
-      sessionToken: authData.access_token,
-      userId: authData.user!.id,
-      expiresAt: new Date(authData.expires_at! * 1000).toISOString(),
-    };
+    // Handle other errors
+    if (!data.success && data.error) {
+      throw new Error(data.error_description || data.error || 'Sign up failed');
+    }
 
-    this.setSession(session);
+    // Handle successful signup with session
+    if (data.success && data.session) {
+      const session: AuthSession = {
+        sessionToken: data.session.access_token,
+        userId: data.session.user.id,
+        expiresAt: new Date(data.session.expires_at * 1000).toISOString(),
+      };
 
-    // Store user profile data
-    this.updateUserData({
-      name: credentials.name || '',
-      email: credentials.email,
-      avatarUrl: null,
-    });
+      this.setSession(session);
 
-    console.log('Sign up successful, JWT token set');
+      // Store user profile data
+      this.updateUserData({
+        name: credentials.name || '',
+        email: credentials.email,
+        avatarUrl: null,
+      });
+
+      console.log('Sign up successful, JWT token set');
+      return {
+        session,
+        requiresEmailConfirmation: false,
+        email: credentials.email,
+        accountAlreadyExists: false,
+      };
+    }
+
+    // Handle signup that requires email confirmation
     return {
-      session,
-      requiresEmailConfirmation: false,
+      requiresEmailConfirmation: true,
       email: credentials.email,
+      accountAlreadyExists: false,
     };
   }
 
