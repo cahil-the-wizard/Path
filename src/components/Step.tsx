@@ -1,7 +1,7 @@
 import React, {useState, useRef, useEffect} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking} from 'react-native';
 import {createPortal} from 'react-dom';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, Link} from 'lucide-react-native';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen} from 'lucide-react-native';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
@@ -140,21 +140,19 @@ export const Step: React.FC<StepProps> = ({
 
             {/* Helpful Links */}
             {!completed && helpfulLinks.length > 0 && (
-              <View style={styles.helpfulLinksContainer}>
-                {helpfulLinks.slice(0, 2).map((link, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.linkCard}
-                    onPress={() => Linking.openURL(link.url)}
-                    activeOpacity={0.7}>
-                    <Link size={14} color={colors.gray.light[400]} strokeWidth={1.5} />
-                    <View style={styles.linkContent}>
-                      <Text style={styles.linkTitle}>{link.title}</Text>
-                      <Text style={styles.linkReason} numberOfLines={2}>{link.relevance_reason}</Text>
-                    </View>
-                  </TouchableOpacity>
+              <Text style={styles.helpfulLinksText}>
+                Helpful links:{' '}
+                {helpfulLinks.map((link, index) => (
+                  <React.Fragment key={index}>
+                    <Text
+                      style={styles.helpfulLink}
+                      onPress={() => Linking.openURL(link.url)}>
+                      {link.title}
+                    </Text>
+                    {index < helpfulLinks.length - 1 && ', '}
+                  </React.Fragment>
                 ))}
-              </View>
+              </Text>
             )}
 
             {!completed && timeEstimate && (
@@ -468,39 +466,21 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     lineHeight: 19.6,
   },
-  helpfulLinksContainer: {
-    gap: 8,
-  },
-  linkCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 12,
-    backgroundColor: colors.gray.light[50],
-    borderWidth: 1,
-    borderColor: colors.gray.light[200],
-    borderRadius: 8,
-    // @ts-ignore - web-specific styles
-    cursor: 'pointer',
-    // @ts-ignore
-    transition: 'all 0.2s ease',
-  },
-  linkContent: {
-    flex: 1,
-    gap: 4,
-  },
-  linkTitle: {
-    color: colors.gray.light[900],
+  helpfulLinksText: {
+    color: colors.gray.light[600],
     fontSize: 14,
     fontFamily: 'Inter',
-    fontWeight: '500',
+    fontWeight: '400',
     lineHeight: 19.6,
   },
-  linkReason: {
-    color: colors.gray.light[600],
-    fontSize: 12,
+  helpfulLink: {
+    color: colors.green[600],
+    fontSize: 14,
     fontFamily: 'Inter',
     fontWeight: '400',
-    lineHeight: 16.8,
+    lineHeight: 19.6,
+    textDecorationLine: 'underline',
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
   },
 });
