@@ -66,6 +66,7 @@ class AuthService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_CONFIG.anonKey}`,
         'apikey': API_CONFIG.anonKey,
       },
       body: JSON.stringify({
