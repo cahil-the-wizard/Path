@@ -59,8 +59,8 @@ const AddTaskButton: React.FC<AddTaskButtonProps> = ({collapsed, onPress, active
 };
 
 interface NavbarProps {
-  onNavigate: (page: 'today' | 'todayV2' | 'newTask' | 'tasksList' | 'taskDetail') => void;
-  currentPage: 'today' | 'todayV2' | 'newTask' | 'tasksList' | 'taskDetail';
+  onNavigate: (page: 'today' | 'newTask' | 'tasksList' | 'taskDetail') => void;
+  currentPage: 'today' | 'newTask' | 'tasksList' | 'taskDetail';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
@@ -205,14 +205,6 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               active={currentPage === 'today'}
               collapsed={collapsed}
               onPress={() => onNavigate('today')}
-              textOpacity={opacityAnim}
-            />
-            <NavItem
-              label="Today V2"
-              icon={Sun}
-              active={currentPage === 'todayV2'}
-              collapsed={collapsed}
-              onPress={() => onNavigate('todayV2')}
               textOpacity={opacityAnim}
             />
             <NavItem
