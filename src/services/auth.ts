@@ -161,7 +161,7 @@ class AuthService {
     // Fetch user metadata from Supabase
     const userMetadata = await this.fetchUserMetadata(authData.access_token);
     this.updateUserData({
-      name: userMetadata?.name || '',
+      name: userMetadata?.full_name || userMetadata?.name || '',
       email: authData.user.email,
       avatarUrl: null,
     });
@@ -173,7 +173,7 @@ class AuthService {
   /**
    * Fetches user metadata from Supabase
    */
-  private async fetchUserMetadata(accessToken: string): Promise<{name?: string} | null> {
+  private async fetchUserMetadata(accessToken: string): Promise<{name?: string; full_name?: string} | null> {
     try {
       const response = await fetch(`${this.supabaseUrl}/auth/v1/user`, {
         headers: {
