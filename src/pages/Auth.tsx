@@ -7,11 +7,20 @@ import {PasswordStrengthIndicator} from '../components/PasswordStrengthIndicator
 import {LogIn} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {useAuth} from '../contexts/AuthContext';
-import {useNavigate} from 'react-router-dom';
+import {useNavigate, useLocation} from 'react-router-dom';
+
+const REMEMBERED_EMAIL_KEY = 'remembered_email';
 
 export const Auth: React.FC = () => {
-  const [mode, setMode] = useState<'signin' | 'signup'>('signup');
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const mode: 'signin' | 'signup' = location.pathname === '/auth/login' ? 'signin' : 'signup';
+  const [email, setEmail] = useState(() => {
+    try {
+      return localStorage.getItem(REMEMBERED_EMAIL_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -87,6 +96,11 @@ export const Auth: React.FC = () => {
       return;
     }
 
+    // Remember email for future visits
+    try {
+      localStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim());
+    } catch {}
+
     setIsLoading(true);
     try {
       if (mode === 'signup') {
@@ -129,6 +143,10 @@ export const Auth: React.FC = () => {
           password: password.trim(),
         });
         console.log('Signed in successfully, session:', session.userId);
+        // Clear remembered email after successful login
+        try {
+          localStorage.removeItem(REMEMBERED_EMAIL_KEY);
+        } catch {}
         // Save email to profile data
         updateUserData({
           email: email.trim(),
@@ -172,10 +190,10 @@ export const Auth: React.FC = () => {
         <TouchableOpacity
           onPress={() => {
             setShowEmailConfirmation(false);
-            setMode('signin');
-            setEmail('');
+            navigate('/auth/login');
             setPassword('');
             setName('');
+            // Keep email
           }}
           style={styles.footerLinkContainer}>
           <Text style={styles.footerLink}>Log in</Text>
@@ -300,10 +318,11 @@ export const Auth: React.FC = () => {
               <TouchableOpacity
                 onPress={() => {
                   if (!isLoading) {
-                    setMode(mode === 'signin' ? 'signup' : 'signin');
+                    const targetPath = mode === 'signin' ? '/auth/signup' : '/auth/login';
+                    navigate(targetPath);
                     setName('');
-                    setEmail('');
                     setPassword('');
+                    // Keep email - don't clear it when switching modes
                   }
                 }}
                 style={styles.footerLinkContainer}>
@@ -329,7 +348,8 @@ export const Auth: React.FC = () => {
             actionText="Log in"
             onAction={() => {
               setShowAccountExistsToast(false);
-              setMode('signin');
+              navigate('/auth/login');
+              // Email already in state, no need to pass it
             }}
             onClose={() => setShowAccountExistsToast(false)}
           />
