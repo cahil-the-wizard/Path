@@ -19,6 +19,8 @@ export const Auth: React.FC = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState('');
   const [showAccountExistsToast, setShowAccountExistsToast] = useState(false);
+  const [showErrorToast, setShowErrorToast] = useState(false);
+  const [errorToastMessage, setErrorToastMessage] = useState('');
   const navigate = useNavigate();
   const {signIn, signUp, updateUserData} = useAuth();
   const {width} = useWindowDimensions();
@@ -136,7 +138,12 @@ export const Auth: React.FC = () => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-      Alert.alert('Error', errorMessage);
+      if (mode === 'signup') {
+        setErrorToastMessage(errorMessage);
+        setShowErrorToast(true);
+      } else {
+        Alert.alert('Error', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -325,6 +332,11 @@ export const Auth: React.FC = () => {
               setMode('signin');
             }}
             onClose={() => setShowAccountExistsToast(false)}
+          />
+          <Toast
+            visible={showErrorToast}
+            message={errorToastMessage}
+            onClose={() => setShowErrorToast(false)}
           />
         </View>
 
