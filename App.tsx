@@ -21,7 +21,7 @@ interface ProtectedRouteProps {
 }
 
 function ProtectedRoute({children, isAuthenticated}: ProtectedRouteProps): React.JSX.Element {
-  return isAuthenticated ? children : <Navigate to="/auth" replace />;
+  return isAuthenticated ? children : <Navigate to="/auth/login" replace />;
 }
 
 function AppContent(): React.JSX.Element {
@@ -65,12 +65,14 @@ function AppContent(): React.JSX.Element {
   };
 
   // Check if current route is auth page
-  const isAuthPage = location.pathname === '/auth';
+  const isAuthPage = location.pathname.startsWith('/auth');
 
   if (isAuthPage) {
     return (
       <Routes>
-        <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/login" element={<Auth />} />
+        <Route path="/auth/signup" element={<Auth />} />
+        <Route path="/auth" element={<Navigate to="/auth/signup" replace />} />
       </Routes>
     );
   }
