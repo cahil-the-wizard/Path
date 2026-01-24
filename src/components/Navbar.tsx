@@ -75,7 +75,6 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const {signOut, userData} = useAuth();
 
   // Get user's name and first initial for avatar
-  console.log('userData in Navbar:', userData);
   const displayName = userData.name || 'User';
   const userInitial = displayName.charAt(0).toUpperCase();
 
