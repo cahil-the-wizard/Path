@@ -40,6 +40,7 @@ export const TaskDetail: React.FC = () => {
   const [isRewritingTask, setIsRewritingTask] = useState(false);
   const [isAddingStep, setIsAddingStep] = useState<string | null>(null);
   const [enrichingSteps, setEnrichingSteps] = useState<Set<string>>(new Set());
+  const [savingNoteSteps, setSavingNoteSteps] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
@@ -284,6 +285,61 @@ export const TaskDetail: React.FC = () => {
     setShowAddStepModal(true);
   };
 
+  const handleNoteChange = async (stepId: string, note: string) => {
+    try {
+      setSavingNoteSteps(prev => new Set(prev).add(stepId));
+      await apiClient.updateStepNote(stepId, note);
+
+      // Update local state with new note
+      setSteps(prevSteps =>
+        prevSteps.map(step => {
+          if (step.id !== stepId) return step;
+
+          const existingMetadata = step.metadata || [];
+          const noteIndex = existingMetadata.findIndex(m => m.field === 'user_note');
+
+          if (note.trim() === '') {
+            // Remove the note metadata if empty
+            return {
+              ...step,
+              metadata: existingMetadata.filter(m => m.field !== 'user_note'),
+            };
+          }
+
+          const newNoteMetadata = {
+            id: noteIndex >= 0 ? existingMetadata[noteIndex].id : `temp-${Date.now()}`,
+            step_id: stepId,
+            field: 'user_note' as const,
+            value: {note},
+            created_at: new Date().toISOString(),
+          };
+
+          if (noteIndex >= 0) {
+            // Update existing note
+            const updatedMetadata = [...existingMetadata];
+            updatedMetadata[noteIndex] = newNoteMetadata;
+            return {...step, metadata: updatedMetadata};
+          } else {
+            // Add new note
+            return {...step, metadata: [...existingMetadata, newNoteMetadata]};
+          }
+        })
+      );
+    } catch (error) {
+      console.error('Failed to save note:', error);
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to save note'
+      );
+    } finally {
+      setSavingNoteSteps(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(stepId);
+        return newSet;
+      });
+    }
+  };
+
   const handleAddStep = async (prompt: string) => {
     if (!task || !selectedStepForAdd) return;
 
@@ -523,10 +579,12 @@ export const TaskDetail: React.FC = () => {
                     onSplit={() => handleSplitStep(step.id)}
                     onRewrite={() => handleRewriteStepClick(step.id, step.title)}
                     onAddAfter={() => handleAddAfterClick(step.id)}
+                    onNoteChange={(note) => handleNoteChange(step.id, note)}
                     isSplitting={isSplitting === step.id}
                     isRewriting={isRewriting === step.id}
                     isAddingAfter={isAddingStep === step.id}
                     isEnriching={enrichingSteps.has(step.id)}
+                    isSavingNote={savingNoteSteps.has(step.id)}
                   />
                 ))
               )}

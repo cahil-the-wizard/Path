@@ -17,4 +17,5 @@ export const API_ENDPOINTS = {
   rewriteTask: '/rewrite-task',
   getQueueStatus: (queueId: string) => `/get-queue-status/${queueId}`,
   getTasksSummary: '/get-tasks-summary',
+  updateStepNote: (stepId: string) => `/update-step-note/${stepId}`,
 } as const;
