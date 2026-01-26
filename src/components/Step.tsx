@@ -1,11 +1,11 @@
 import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking, TextInput} from 'react-native';
 import {createPortal} from 'react-dom';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote} from 'lucide-react-native';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote, Copy, Mail} from 'lucide-react-native';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
-import type {StepMetadata, UserNoteStepMetadata} from '../types/backend';
+import type {StepMetadata, UserNoteStepMetadata, CopyDraftsStepMetadata, CopyDraft, EmailDraft} from '../types/backend';
 
 interface StepProps {
   title: string;
@@ -60,6 +60,7 @@ export const Step: React.FC<StepProps> = ({
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [copiedDraftIndex, setCopiedDraftIndex] = useState<number | null>(null);
   const splitButtonRef = useRef<any>(null);
   const rewriteButtonRef = useRef<any>(null);
   const addAfterButtonRef = useRef<any>(null);
@@ -88,6 +89,38 @@ export const Step: React.FC<StepProps> = ({
     (m): m is UserNoteStepMetadata => m.field === 'user_note'
   );
   const existingNote = userNoteMetadata?.value?.note || '';
+
+  // Find copy drafts metadata
+  const copyDraftsMetadata = metadata?.find(
+    (m): m is CopyDraftsStepMetadata => m.field === 'copy_drafts'
+  );
+  const copyDrafts = copyDraftsMetadata?.value?.drafts || [];
+
+  // Handle copying draft content to clipboard
+  const handleCopyDraft = async (draft: CopyDraft, index: number) => {
+    try {
+      const textToCopy = draft.draft_type === 'email'
+        ? `Subject: ${draft.subject}\n\n${draft.body}`
+        : draft.content;
+
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedDraftIndex(index);
+
+      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setCopiedDraftIndex(null);
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+    }
+  };
+
+  // Generate mailto link for email drafts
+  const generateMailtoLink = (draft: EmailDraft): string => {
+    const subject = encodeURIComponent(draft.subject);
+    const body = encodeURIComponent(draft.body);
+    return `mailto:?subject=${subject}&body=${body}`;
+  };
 
   // Initialize note text from existing note
   useEffect(() => {
@@ -280,6 +313,58 @@ export const Step: React.FC<StepProps> = ({
                     <Text style={styles.userNoteText}>{existingNote}</Text>
                   </TouchableOpacity>
                 )}
+              </View>
+            )}
+
+            {/* Copy Drafts */}
+            {!completed && copyDrafts.length > 0 && (
+              <View style={styles.copyDraftsContainer}>
+                <View style={styles.copyDraftsHeader}>
+                  <Copy size={14} color={colors.indigo[600]} strokeWidth={1.5} />
+                  <Text style={styles.copyDraftsLabel}>Ready-to-send drafts</Text>
+                </View>
+                {copyDrafts.map((draft, index) => (
+                  <View key={index} style={styles.draftItem}>
+                    <View style={styles.draftContent}>
+                      {draft.draft_type === 'email' ? (
+                        <>
+                          <Text style={styles.draftTypeLabel}>Email</Text>
+                          <Text style={styles.draftSubject}>{draft.subject}</Text>
+                          <Text style={styles.draftBody} numberOfLines={3}>{draft.body}</Text>
+                        </>
+                      ) : (
+                        <>
+                          <Text style={styles.draftTypeLabel}>Text Message</Text>
+                          <Text style={styles.draftBody} numberOfLines={3}>{draft.content}</Text>
+                        </>
+                      )}
+                    </View>
+                    <View style={styles.draftActions}>
+                      <TouchableOpacity
+                        style={[
+                          styles.draftActionButton,
+                          copiedDraftIndex === index && styles.draftActionButtonCopied
+                        ]}
+                        onPress={() => handleCopyDraft(draft, index)}>
+                        <Copy
+                          size={16}
+                          color={copiedDraftIndex === index ? colors.success[600] : colors.indigo[600]}
+                          strokeWidth={1.5}
+                        />
+                        {copiedDraftIndex === index && (
+                          <Text style={styles.copiedText}>Copied!</Text>
+                        )}
+                      </TouchableOpacity>
+                      {draft.draft_type === 'email' && (
+                        <TouchableOpacity
+                          style={styles.draftActionButton}
+                          onPress={() => Linking.openURL(generateMailtoLink(draft))}>
+                          <Mail size={16} color={colors.indigo[600]} strokeWidth={1.5} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                ))}
               </View>
             )}
           </View>
@@ -710,5 +795,96 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     // @ts-ignore
     resize: 'none',
+  },
+  // Copy Drafts styles
+  copyDraftsContainer: {
+    marginTop: 4,
+    padding: 12,
+    backgroundColor: colors.indigo[50],
+    borderLeftWidth: 3,
+    borderLeftColor: colors.indigo[400],
+    borderRadius: 6,
+  },
+  copyDraftsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  copyDraftsLabel: {
+    color: colors.indigo[700],
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  draftItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.indigo[200],
+  },
+  draftContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  draftTypeLabel: {
+    color: colors.indigo[500],
+    fontSize: 11,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    marginBottom: 4,
+  },
+  draftSubject: {
+    color: colors.indigo[900],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  draftBody: {
+    color: colors.indigo[800],
+    fontSize: 13,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    lineHeight: 18,
+    // @ts-ignore - web-specific styles
+    whiteSpace: 'pre-wrap',
+  },
+  draftActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  draftActionButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+    backgroundColor: colors.indigo[100],
+    flexDirection: 'row',
+    gap: 4,
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
+    // @ts-ignore
+    transition: 'background-color 0.15s ease',
+  },
+  draftActionButtonCopied: {
+    backgroundColor: colors.success[100],
+    width: 'auto',
+    paddingHorizontal: 8,
+  },
+  copiedText: {
+    color: colors.success[600],
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '500',
   },
 });
