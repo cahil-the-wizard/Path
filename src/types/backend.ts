@@ -40,13 +40,27 @@ export interface HelpfulLinksMetadata {
   links: HelpfulLink[];
 }
 
-export interface StepMetadata {
+export interface UserNoteValue {
+  note: string;
+}
+
+export interface HelpfulLinksStepMetadata {
   id: string;
   step_id: string;
   field: 'helpful_links';
   value: HelpfulLinksMetadata;
   created_at: string;
 }
+
+export interface UserNoteStepMetadata {
+  id: string;
+  step_id: string;
+  field: 'user_note';
+  value: UserNoteValue;
+  created_at: string;
+}
+
+export type StepMetadata = HelpfulLinksStepMetadata | UserNoteStepMetadata;
 
 export interface StepWithMetadata extends Step {
   metadata?: StepMetadata[];

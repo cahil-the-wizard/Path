@@ -280,6 +280,29 @@ class ApiClient {
     });
   }
 
+  // Step note operations
+  async updateStepNote(
+    stepId: string,
+    note: string
+  ): Promise<{success: boolean; message: string}> {
+    return this.request<{success: boolean; message: string}>(
+      API_ENDPOINTS.updateStepNote(stepId),
+      {
+        method: 'PUT',
+        body: JSON.stringify({note}),
+      }
+    );
+  }
+
+  async deleteStepNote(stepId: string): Promise<{success: boolean; message: string}> {
+    return this.request<{success: boolean; message: string}>(
+      API_ENDPOINTS.updateStepNote(stepId),
+      {
+        method: 'DELETE',
+      }
+    );
+  }
+
   // Summary operations
   async getTasksSummary(params?: GetTasksSummaryParams): Promise<GetTasksSummaryResponse> {
     const queryParams = new URLSearchParams();

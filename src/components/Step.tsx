@@ -1,11 +1,11 @@
-import React, {useState, useRef, useEffect} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking} from 'react-native';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
+import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking, TextInput} from 'react-native';
 import {createPortal} from 'react-dom';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen} from 'lucide-react-native';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote} from 'lucide-react-native';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
-import type {StepMetadata} from '../types/backend';
+import type {StepMetadata, UserNoteStepMetadata} from '../types/backend';
 
 interface StepProps {
   title: string;
@@ -18,10 +18,12 @@ interface StepProps {
   onSplit?: () => void;
   onRewrite?: () => void;
   onAddAfter?: () => void;
+  onNoteChange?: (note: string) => void;
   isSplitting?: boolean;
   isRewriting?: boolean;
   isAddingAfter?: boolean;
   isEnriching?: boolean;
+  isSavingNote?: boolean;
 }
 
 export const Step: React.FC<StepProps> = ({
@@ -35,24 +37,34 @@ export const Step: React.FC<StepProps> = ({
   onSplit,
   onRewrite,
   onAddAfter,
+  onNoteChange,
   isSplitting = false,
   isRewriting = false,
   isAddingAfter = false,
   isEnriching = false,
+  isSavingNote = false,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showSplitTooltip, setShowSplitTooltip] = useState(false);
   const [showRewriteTooltip, setShowRewriteTooltip] = useState(false);
   const [showAddAfterTooltip, setShowAddAfterTooltip] = useState(false);
+  const [showNoteTooltip, setShowNoteTooltip] = useState(false);
   const [splitHovered, setSplitHovered] = useState(false);
   const [rewriteHovered, setRewriteHovered] = useState(false);
   const [addAfterHovered, setAddAfterHovered] = useState(false);
+  const [noteHovered, setNoteHovered] = useState(false);
   const [splitTooltipPosition, setSplitTooltipPosition] = useState({x: 0, y: 0});
   const [rewriteTooltipPosition, setRewriteTooltipPosition] = useState({x: 0, y: 0});
   const [addAfterTooltipPosition, setAddAfterTooltipPosition] = useState({x: 0, y: 0});
+  const [noteTooltipPosition, setNoteTooltipPosition] = useState({x: 0, y: 0});
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const splitButtonRef = useRef<any>(null);
   const rewriteButtonRef = useRef<any>(null);
   const addAfterButtonRef = useRef<any>(null);
+  const noteButtonRef = useRef<any>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Parse description if it's a JSON array string
   const parseDescription = (desc?: string): string[] => {
@@ -70,6 +82,52 @@ export const Step: React.FC<StepProps> = ({
   // Find helpful links metadata
   const helpfulLinksMetadata = metadata?.find(m => m.field === 'helpful_links');
   const helpfulLinks = helpfulLinksMetadata?.value?.links || [];
+
+  // Find user note metadata
+  const userNoteMetadata = metadata?.find(
+    (m): m is UserNoteStepMetadata => m.field === 'user_note'
+  );
+  const existingNote = userNoteMetadata?.value?.note || '';
+
+  // Initialize note text from existing note
+  useEffect(() => {
+    setNoteText(existingNote);
+  }, [existingNote]);
+
+  // Auto-save with debouncing
+  const debouncedSave = useCallback(
+    (text: string) => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        if (onNoteChange && text !== existingNote) {
+          onNoteChange(text);
+          setHasUnsavedChanges(false);
+        }
+      }, 1000);
+    },
+    [onNoteChange, existingNote]
+  );
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleNoteChange = (text: string) => {
+    setNoteText(text);
+    setHasUnsavedChanges(text !== existingNote);
+    debouncedSave(text);
+  };
+
+  const handleNoteClick = () => {
+    setIsEditingNote(true);
+  };
 
   // Update tooltip positions when buttons are hovered
   useEffect(() => {
@@ -101,6 +159,16 @@ export const Step: React.FC<StepProps> = ({
       });
     }
   }, [showAddAfterTooltip]);
+
+  useEffect(() => {
+    if (showNoteTooltip && noteButtonRef.current) {
+      const rect = noteButtonRef.current.getBoundingClientRect();
+      setNoteTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - 8,
+      });
+    }
+  }, [showNoteTooltip]);
 
   return (
     <View style={styles.wrapper}>
@@ -178,11 +246,47 @@ export const Step: React.FC<StepProps> = ({
                 <Text style={styles.metadataValue}>{completionCue}</Text>
               </View>
             )} */}
+
+            {/* User Note - Display or Edit */}
+            {!completed && (isEditingNote || existingNote) && (
+              <View style={styles.userNoteContainer}>
+                <View style={styles.userNoteHeader}>
+                  <StickyNote size={14} color={colors.amber[600]} strokeWidth={1.5} />
+                  <Text style={styles.userNoteLabel}>Note</Text>
+                  {isSavingNote && (
+                    <ActivityIndicator size={10} color={colors.amber[600]} style={{marginLeft: 4}} />
+                  )}
+                  {hasUnsavedChanges && !isSavingNote && (
+                    <Text style={styles.unsavedIndicator}>•</Text>
+                  )}
+                </View>
+                {isEditingNote ? (
+                  <TextInput
+                    style={styles.userNoteInput}
+                    value={noteText}
+                    onChangeText={handleNoteChange}
+                    placeholder="Add a note for future reference..."
+                    placeholderTextColor={colors.gray.light[400]}
+                    multiline
+                    autoFocus
+                    onBlur={() => {
+                      if (!noteText.trim() && !existingNote) {
+                        setIsEditingNote(false);
+                      }
+                    }}
+                  />
+                ) : (
+                  <TouchableOpacity onPress={handleNoteClick}>
+                    <Text style={styles.userNoteText}>{existingNote}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
         </View>
 
         {/* Actions Bar - appears on hover in top right */}
-        {!completed && (isHovered || isSplitting || isRewriting || isAddingAfter) && (onSplit || onRewrite || onAddAfter) && (
+        {!completed && (isHovered || isSplitting || isRewriting || isAddingAfter || isSavingNote) && (onSplit || onRewrite || onAddAfter || onNoteChange) && (
           <View style={styles.actionsBar}>
             {isRewriting ? (
               <View style={styles.actionButton}>
@@ -259,6 +363,31 @@ export const Step: React.FC<StepProps> = ({
                 />
               </TouchableOpacity>
             ) : null}
+            {onNoteChange && (
+              <TouchableOpacity
+                ref={noteButtonRef}
+                style={[
+                  styles.actionButton,
+                  noteHovered && styles.actionButtonHovered,
+                  (isEditingNote || existingNote) && styles.actionButtonActive,
+                ]}
+                onPress={handleNoteClick}
+                onMouseEnter={() => {
+                  setShowNoteTooltip(true);
+                  setNoteHovered(true);
+                }}
+                onMouseLeave={() => {
+                  setShowNoteTooltip(false);
+                  setNoteHovered(false);
+                }}
+                disabled={isSplitting || isRewriting || isAddingAfter}>
+                <StickyNote
+                  size={18}
+                  color={(isEditingNote || existingNote) ? colors.amber[600] : colors.gray.light[600]}
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -307,6 +436,22 @@ export const Step: React.FC<StepProps> = ({
         }}>
           <View style={styles.tooltipPortal}>
             <Text style={styles.tooltipText}>Add below</Text>
+          </View>
+        </div>,
+        document.body
+      )}
+
+      {showNoteTooltip && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: noteTooltipPosition.x,
+          top: noteTooltipPosition.y,
+          transform: 'translate(-50%, -100%)',
+          zIndex: 10000,
+          pointerEvents: 'none',
+        }}>
+          <View style={styles.tooltipPortal}>
+            <Text style={styles.tooltipText}>{existingNote ? 'Edit note' : 'Add note'}</Text>
           </View>
         </div>,
         document.body
@@ -420,6 +565,9 @@ const styles = StyleSheet.create({
   actionButtonHovered: {
     backgroundColor: colors.gray.light[100],
   },
+  actionButtonActive: {
+    backgroundColor: colors.amber[50],
+  },
   tooltipPortal: {
     backgroundColor: colors.gray.light[900],
     paddingHorizontal: 8,
@@ -509,5 +657,58 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
     fontWeight: '400',
     lineHeight: 19.6,
+  },
+  userNoteContainer: {
+    marginTop: 4,
+    padding: 12,
+    backgroundColor: colors.amber[50],
+    borderLeftWidth: 3,
+    borderLeftColor: colors.amber[400],
+    borderRadius: 6,
+  },
+  userNoteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  userNoteLabel: {
+    color: colors.amber[700],
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  unsavedIndicator: {
+    color: colors.amber[500],
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 2,
+  },
+  userNoteText: {
+    color: colors.amber[900],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    lineHeight: 20,
+    // @ts-ignore - web-specific styles
+    whiteSpace: 'pre-wrap',
+  },
+  userNoteInput: {
+    color: colors.amber[900],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    lineHeight: 20,
+    padding: 0,
+    margin: 0,
+    minHeight: 60,
+    // @ts-ignore - web-specific styles
+    outline: 'none',
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    // @ts-ignore
+    resize: 'none',
   },
 });
