@@ -52,10 +52,6 @@ export const TaskDetail: React.FC = () => {
   // Enrichment polling hook
   const handleStepsRefresh = useCallback((newSteps: StepWithMetadata[]) => {
     console.log('[TaskDetail] handleStepsRefresh called with', newSteps.length, 'steps');
-    // Log metadata for first step to see if it has links
-    if (newSteps[0]?.metadata) {
-      console.log('[TaskDetail] First step metadata:', JSON.stringify(newSteps[0].metadata));
-    }
     setSteps(newSteps);
   }, []);
 
@@ -90,12 +86,9 @@ export const TaskDetail: React.FC = () => {
 
   // Debug: log when steps state changes
   useEffect(() => {
-    console.log('[TaskDetail] Steps state updated:', steps.length, 'steps');
-    if (steps[0]?.metadata) {
-      const linksCount = steps[0].metadata.filter(m => m.field === 'helpful_links').length;
-      const draftsCount = steps[0].metadata.filter(m => m.field === 'copy_draft').length;
-      console.log('[TaskDetail] First step has', linksCount, 'helpful_links,', draftsCount, 'copy_drafts');
-    }
+    const totalLinks = steps.reduce((sum, s) => sum + (s.metadata?.filter(m => m.field === 'helpful_links').length || 0), 0);
+    const totalDrafts = steps.reduce((sum, s) => sum + (s.metadata?.filter(m => m.field === 'copy_draft').length || 0), 0);
+    console.log(`[TaskDetail] Steps updated: ${steps.length} steps, ${totalLinks} total links, ${totalDrafts} total drafts`);
   }, [steps]);
 
   const loadTaskDetails = async (idPrefix: string) => {

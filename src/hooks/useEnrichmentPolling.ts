@@ -81,11 +81,13 @@ export function useEnrichmentPolling({
             include_metadata: true,
           });
           console.log('[useEnrichmentPolling] Refreshing steps:', stepsResponse.steps.length);
-          // Log the actual metadata from the API response
-          if (stepsResponse.steps[0]) {
-            console.log('[useEnrichmentPolling] API response - first step metadata:',
-              JSON.stringify(stepsResponse.steps[0].metadata));
-          }
+          // Log metadata summary for ALL steps
+          const metadataSummary = stepsResponse.steps.map((step, i) => {
+            const links = step.metadata?.filter(m => m.field === 'helpful_links').length || 0;
+            const drafts = step.metadata?.filter(m => m.field === 'copy_draft').length || 0;
+            return `Step ${i + 1}: ${links} links, ${drafts} drafts`;
+          });
+          console.log('[useEnrichmentPolling] All steps metadata:', metadataSummary.join(' | '));
           onStepsRefreshRef.current(stepsResponse.steps);
         }
 
