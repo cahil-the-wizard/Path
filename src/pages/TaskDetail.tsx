@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {Step} from '../components/Step';
@@ -9,12 +9,14 @@ import {RewriteStepModal} from '../components/RewriteStepModal';
 import {RewriteTaskModal} from '../components/RewriteTaskModal';
 import {TaskGenerationModal} from '../components/TaskGenerationModal';
 import {AddStepModal} from '../components/AddStepModal';
+import {EnrichmentBanner} from '../components/EnrichmentBanner';
 import {CircleCheckBig, MoreHorizontal, Copy, Edit, Trash2} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
 import {useParams, useNavigate} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import {useTasks} from '../contexts/TasksContext';
+import {useEnrichmentPolling} from '../hooks/useEnrichmentPolling';
 import type {Task, StepWithMetadata} from '../types/backend';
 import {getTaskIdFromSlug, generateTaskSlug} from '../utils/slug';
 
@@ -39,8 +41,19 @@ export const TaskDetail: React.FC = () => {
   const [selectedStepForAdd, setSelectedStepForAdd] = useState<string | null>(null);
   const [isRewritingTask, setIsRewritingTask] = useState(false);
   const [isAddingStep, setIsAddingStep] = useState<string | null>(null);
-  const [enrichingSteps, setEnrichingSteps] = useState<Set<string>>(new Set());
   const [savingNoteSteps, setSavingNoteSteps] = useState<Set<string>>(new Set());
+
+  // Enrichment polling hook
+  const handleStepsRefresh = useCallback((newSteps: StepWithMetadata[]) => {
+    setSteps(newSteps);
+  }, []);
+
+  const {isEnriching, startPolling: startEnrichmentPolling} = useEnrichmentPolling({
+    taskId: task?.id || null,
+    onStepsRefresh: handleStepsRefresh,
+    pollingInterval: 5000,
+    maxPolls: 60,
+  });
 
   useEffect(() => {
     console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
@@ -122,36 +135,9 @@ export const TaskDetail: React.FC = () => {
       });
       console.log('Step updated successfully in database');
 
-      // If there's an enrichment queue, poll for completion
+      // If there's an enrichment queue, start polling
       if (response.enrichment_queue_id) {
-        // Mark step as enriching
-        setEnrichingSteps(prev => new Set(prev).add(stepId));
-
-        // Poll for enrichment completion
-        apiClient.pollEnrichmentStatus(
-          response.enrichment_queue_id,
-          async () => {
-            // On complete, refresh steps to get new metadata
-            if (task?.id) {
-              const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
-              setSteps(stepsResponse.steps);
-            }
-            // Remove from enriching set
-            setEnrichingSteps(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(stepId);
-              return newSet;
-            });
-          },
-          () => {
-            // On error, just remove from enriching set
-            setEnrichingSteps(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(stepId);
-              return newSet;
-            });
-          }
-        );
+        startEnrichmentPolling(response.enrichment_queue_id);
       }
 
       // Refresh task to get auto-complete status from backend
@@ -562,6 +548,7 @@ export const TaskDetail: React.FC = () => {
                 {completedCount} of {totalCount} steps complete
               </Text>
             </View>
+            <EnrichmentBanner visible={isEnriching} />
             <ScrollView style={styles.stepsList}>
               {steps.length === 0 ? (
                 <Text style={styles.emptyText}>No steps yet</Text>
@@ -583,7 +570,7 @@ export const TaskDetail: React.FC = () => {
                     isSplitting={isSplitting === step.id}
                     isRewriting={isRewriting === step.id}
                     isAddingAfter={isAddingStep === step.id}
-                    isEnriching={enrichingSteps.has(step.id)}
+                    isEnriching={isEnriching}
                     isSavingNote={savingNoteSteps.has(step.id)}
                   />
                 ))
