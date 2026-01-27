@@ -49,15 +49,17 @@ export function useEnrichmentPolling({
     async (queueId: string) => {
       // Check max polls
       if (pollCountRef.current >= maxPolls) {
-        console.warn('Enrichment polling timeout - max polls reached');
+        console.warn('[useEnrichmentPolling] Timeout - max polls reached');
         stopPolling();
         return;
       }
       pollCountRef.current++;
+      console.log(`[useEnrichmentPolling] Poll #${pollCountRef.current} for queue:`, queueId);
 
       try {
         // 1. Check enrichment status
         const status = await apiClient.getQueueStatus(queueId);
+        console.log('[useEnrichmentPolling] Queue status:', status.status);
 
         // 2. Refresh steps to get latest metadata
         if (taskId) {
@@ -102,6 +104,9 @@ export function useEnrichmentPolling({
 
   const startPolling = useCallback(
     (queueId: string) => {
+      console.log('[useEnrichmentPolling] Starting polling for queue:', queueId);
+      console.log('[useEnrichmentPolling] taskId:', taskId);
+
       // Cancel any existing polling
       stopPolling();
 
@@ -113,7 +118,7 @@ export function useEnrichmentPolling({
       // Start immediately
       poll(queueId);
     },
-    [poll, stopPolling]
+    [poll, stopPolling, taskId]
   );
 
   return {
