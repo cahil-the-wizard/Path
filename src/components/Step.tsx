@@ -249,7 +249,7 @@ export const Step: React.FC<StepProps> = ({
             {/* Enriching indicator removed - global banner shows instead */}
 
             {/* Helpful Links */}
-            {!completed && !isEnriching && helpfulLinks.length > 0 && (
+            {!completed && helpfulLinks.length > 0 && (
               <Text style={styles.helpfulLinksText}>
                 Helpful links:{' '}
                 {helpfulLinks.map((link, index) => (
