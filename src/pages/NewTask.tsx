@@ -49,8 +49,10 @@ export const NewTask: React.FC = () => {
         setIsLoading(false);
 
         // Navigate to the new task using slug, passing enrichment queue ID if present
-        const navigationState = queueStatus.enrichment_queue_id
-          ? {state: {enrichmentQueueId: queueStatus.enrichment_queue_id}}
+        const enrichmentQueueId = queueStatus.result?.enrichment_queue_id;
+        console.log('Enrichment queue ID from result:', enrichmentQueueId);
+        const navigationState = enrichmentQueueId
+          ? {state: {enrichmentQueueId}}
           : undefined;
 
         if (newTask) {

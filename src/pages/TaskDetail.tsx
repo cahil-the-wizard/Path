@@ -368,10 +368,11 @@ export const TaskDetail: React.FC = () => {
         setSteps(stepsResponse.steps);
       }
 
-      // Start enrichment polling if queue returned enrichment_queue_id
-      if (queueStatus.enrichment_queue_id) {
-        console.log('Starting enrichment polling after add step:', queueStatus.enrichment_queue_id);
-        startEnrichmentPolling(queueStatus.enrichment_queue_id);
+      // Start enrichment polling if queue returned enrichment_queue_id in result
+      const enrichmentQueueId = queueStatus.result?.enrichment_queue_id;
+      if (enrichmentQueueId) {
+        console.log('Starting enrichment polling after add step:', enrichmentQueueId);
+        startEnrichmentPolling(enrichmentQueueId);
       }
 
       // Refresh task lists

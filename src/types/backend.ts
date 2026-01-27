@@ -91,7 +91,9 @@ export interface QueueStatus {
     step_count?: number;
     step_id?: string;
     new_step_count?: number;
-    // Enrichment results
+    // Enrichment queue ID returned after task/step creation
+    enrichment_queue_id?: string | null;
+    // Enrichment results (when request_type is 'enrich_task')
     enriched_steps?: number;
     total_links_added?: number;
     drafts_created?: number;
@@ -99,8 +101,6 @@ export interface QueueStatus {
   error_message: string | null;
   created_at: string;
   completed_at: string | null;
-  // Enrichment queue ID returned after task/step creation
-  enrichment_queue_id?: string | null;
 }
 
 export interface TaskSummary {
