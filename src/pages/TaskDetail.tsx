@@ -52,7 +52,8 @@ export const TaskDetail: React.FC = () => {
   // Enrichment polling hook
   const handleStepsRefresh = useCallback((newSteps: StepWithMetadata[]) => {
     console.log('[TaskDetail] handleStepsRefresh called with', newSteps.length, 'steps');
-    setSteps(newSteps);
+    // Force new object references to trigger re-render in Step components
+    setSteps(newSteps.map(step => ({...step})));
   }, []);
 
   const {isEnriching, startPolling: startEnrichmentPolling} = useEnrichmentPolling({
