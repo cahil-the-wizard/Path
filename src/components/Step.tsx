@@ -5,7 +5,7 @@ import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, P
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
-import type {StepMetadata, UserNoteStepMetadata, CopyDraftsStepMetadata, CopyDraft, EmailDraft} from '../types/backend';
+import type {StepMetadata, UserNoteStepMetadata, CopyDraftStepMetadata, CopyDraftValue} from '../types/backend';
 
 interface StepProps {
   title: string;
@@ -60,7 +60,6 @@ export const Step: React.FC<StepProps> = ({
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [copiedDraftIndex, setCopiedDraftIndex] = useState<number | null>(null);
   const splitButtonRef = useRef<any>(null);
   const rewriteButtonRef = useRef<any>(null);
   const addAfterButtonRef = useRef<any>(null);
@@ -90,36 +89,42 @@ export const Step: React.FC<StepProps> = ({
   );
   const existingNote = userNoteMetadata?.value?.note || '';
 
-  // Find copy drafts metadata
-  const copyDraftsMetadata = metadata?.find(
-    (m): m is CopyDraftsStepMetadata => m.field === 'copy_drafts'
+  // Find copy draft metadata (singular)
+  const copyDraftMetadata = metadata?.find(
+    (m): m is CopyDraftStepMetadata => m.field === 'copy_draft'
   );
-  const copyDrafts = copyDraftsMetadata?.value?.drafts || [];
+  const copyDraft = copyDraftMetadata?.value;
+  const [isCopied, setIsCopied] = useState(false);
 
   // Handle copying draft content to clipboard
-  const handleCopyDraft = async (draft: CopyDraft, index: number) => {
+  const handleCopyDraft = async () => {
+    if (!copyDraft) return;
     try {
-      const textToCopy = draft.draft_type === 'email'
-        ? `Subject: ${draft.subject}\n\n${draft.body}`
-        : draft.content;
-
-      await navigator.clipboard.writeText(textToCopy);
-      setCopiedDraftIndex(index);
+      await navigator.clipboard.writeText(copyDraft.draft_content);
+      setIsCopied(true);
 
       // Reset copied state after 2 seconds
       setTimeout(() => {
-        setCopiedDraftIndex(null);
+        setIsCopied(false);
       }, 2000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
   };
 
-  // Generate mailto link for email drafts
-  const generateMailtoLink = (draft: EmailDraft): string => {
-    const subject = encodeURIComponent(draft.subject);
-    const body = encodeURIComponent(draft.body);
-    return `mailto:?subject=${subject}&body=${body}`;
+  // Generate mailto link for email drafts - parse subject from content if present
+  const generateMailtoLink = (draft: CopyDraftValue): string => {
+    let subject = draft.draft_title;
+    let body = draft.draft_content;
+
+    // Try to extract subject from content if it starts with "Subject:"
+    const subjectMatch = draft.draft_content.match(/^Subject:\s*(.+?)(?:\n|$)/i);
+    if (subjectMatch) {
+      subject = subjectMatch[1].trim();
+      body = draft.draft_content.replace(/^Subject:\s*.+?\n\n?/i, '');
+    }
+
+    return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   // Initialize note text from existing note
@@ -316,55 +321,53 @@ export const Step: React.FC<StepProps> = ({
               </View>
             )}
 
-            {/* Copy Drafts */}
-            {!completed && copyDrafts.length > 0 && (
+            {/* Copy Draft */}
+            {!completed && copyDraft && (
               <View style={styles.copyDraftsContainer}>
                 <View style={styles.copyDraftsHeader}>
                   <Copy size={14} color={colors.indigo[600]} strokeWidth={1.5} />
-                  <Text style={styles.copyDraftsLabel}>Ready-to-send drafts</Text>
+                  <Text style={styles.copyDraftsLabel}>Ready-to-use draft</Text>
                 </View>
-                {copyDrafts.map((draft, index) => (
-                  <View key={index} style={styles.draftItem}>
-                    <View style={styles.draftContent}>
-                      {draft.draft_type === 'email' ? (
-                        <>
-                          <Text style={styles.draftTypeLabel}>Email</Text>
-                          <Text style={styles.draftSubject}>{draft.subject}</Text>
-                          <Text style={styles.draftBody} numberOfLines={3}>{draft.body}</Text>
-                        </>
-                      ) : (
-                        <>
-                          <Text style={styles.draftTypeLabel}>Text Message</Text>
-                          <Text style={styles.draftBody} numberOfLines={3}>{draft.content}</Text>
-                        </>
-                      )}
-                    </View>
-                    <View style={styles.draftActions}>
-                      <TouchableOpacity
-                        style={[
-                          styles.draftActionButton,
-                          copiedDraftIndex === index && styles.draftActionButtonCopied
-                        ]}
-                        onPress={() => handleCopyDraft(draft, index)}>
-                        <Copy
-                          size={16}
-                          color={copiedDraftIndex === index ? colors.success[600] : colors.indigo[600]}
-                          strokeWidth={1.5}
-                        />
-                        {copiedDraftIndex === index && (
-                          <Text style={styles.copiedText}>Copied!</Text>
-                        )}
-                      </TouchableOpacity>
-                      {draft.draft_type === 'email' && (
-                        <TouchableOpacity
-                          style={styles.draftActionButton}
-                          onPress={() => Linking.openURL(generateMailtoLink(draft))}>
-                          <Mail size={16} color={colors.indigo[600]} strokeWidth={1.5} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                <View style={styles.draftItem}>
+                  <View style={styles.draftContent}>
+                    <Text style={styles.draftTypeLabel}>
+                      {copyDraft.draft_type === 'email' ? 'Email' : 'Text'}
+                    </Text>
+                    <Text style={styles.draftSubject}>{copyDraft.draft_title}</Text>
+                    <Text style={styles.draftBody} numberOfLines={3}>
+                      {copyDraft.draft_content}
+                    </Text>
+                    {copyDraft.customization_tips && (
+                      <Text style={styles.draftTips}>
+                        Tip: {copyDraft.customization_tips}
+                      </Text>
+                    )}
                   </View>
-                ))}
+                  <View style={styles.draftActions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.draftActionButton,
+                        isCopied && styles.draftActionButtonCopied
+                      ]}
+                      onPress={handleCopyDraft}>
+                      <Copy
+                        size={16}
+                        color={isCopied ? colors.success[600] : colors.indigo[600]}
+                        strokeWidth={1.5}
+                      />
+                      {isCopied && (
+                        <Text style={styles.copiedText}>Copied!</Text>
+                      )}
+                    </TouchableOpacity>
+                    {copyDraft.draft_type === 'email' && (
+                      <TouchableOpacity
+                        style={styles.draftActionButton}
+                        onPress={() => Linking.openURL(generateMailtoLink(copyDraft))}>
+                        <Mail size={16} color={colors.indigo[600]} strokeWidth={1.5} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
               </View>
             )}
           </View>
@@ -856,6 +859,15 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     // @ts-ignore - web-specific styles
     whiteSpace: 'pre-wrap',
+  },
+  draftTips: {
+    color: colors.indigo[600],
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '400',
+    fontStyle: 'italic',
+    lineHeight: 16,
+    marginTop: 8,
   },
   draftActions: {
     flexDirection: 'row',

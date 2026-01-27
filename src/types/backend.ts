@@ -60,32 +60,23 @@ export interface UserNoteStepMetadata {
   created_at: string;
 }
 
-export interface EmailDraft {
-  draft_type: 'email';
-  subject: string;
-  body: string;
+export interface CopyDraftValue {
+  created_at: string;
+  draft_type: 'email' | 'text';
+  draft_title: string;
+  draft_content: string;
+  customization_tips?: string;
 }
 
-export interface TextDraft {
-  draft_type: 'text';
-  content: string;
-}
-
-export type CopyDraft = EmailDraft | TextDraft;
-
-export interface CopyDraftsValue {
-  drafts: CopyDraft[];
-}
-
-export interface CopyDraftsStepMetadata {
+export interface CopyDraftStepMetadata {
   id: string;
   step_id: string;
-  field: 'copy_drafts';
-  value: CopyDraftsValue;
+  field: 'copy_draft';
+  value: CopyDraftValue;
   created_at: string;
 }
 
-export type StepMetadata = HelpfulLinksStepMetadata | UserNoteStepMetadata | CopyDraftsStepMetadata;
+export type StepMetadata = HelpfulLinksStepMetadata | UserNoteStepMetadata | CopyDraftStepMetadata;
 
 export interface StepWithMetadata extends Step {
   metadata?: StepMetadata[];
