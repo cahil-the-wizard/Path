@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert} from 'react-native';
 import {PageHeader} from '../components/PageHeader';
 import {Step} from '../components/Step';
@@ -9,14 +9,20 @@ import {RewriteStepModal} from '../components/RewriteStepModal';
 import {RewriteTaskModal} from '../components/RewriteTaskModal';
 import {TaskGenerationModal} from '../components/TaskGenerationModal';
 import {AddStepModal} from '../components/AddStepModal';
+import {EnrichmentBanner} from '../components/EnrichmentBanner';
 import {CircleCheckBig, MoreHorizontal, Copy, Edit, Trash2} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {apiClient} from '../services/apiClient';
-import {useParams, useNavigate} from 'react-router-dom';
+import {useParams, useNavigate, useLocation} from 'react-router-dom';
 import {useAuth} from '../contexts/AuthContext';
 import {useTasks} from '../contexts/TasksContext';
+import {useEnrichmentPolling} from '../hooks/useEnrichmentPolling';
 import type {Task, StepWithMetadata} from '../types/backend';
 import {getTaskIdFromSlug, generateTaskSlug} from '../utils/slug';
+
+interface LocationState {
+  enrichmentQueueId?: string;
+}
 
 export const TaskDetail: React.FC = () => {
   const {taskSlug} = useParams<{taskSlug: string}>();
@@ -24,6 +30,8 @@ export const TaskDetail: React.FC = () => {
   const taskIdPrefix = taskSlug ? getTaskIdFromSlug(taskSlug) : undefined;
   const {session} = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = location.state as LocationState | null;
   const {refreshTasks, refreshTasksSummary} = useTasks();
   const [task, setTask] = useState<Task | null>(null);
   const [steps, setSteps] = useState<StepWithMetadata[]>([]);
@@ -39,8 +47,19 @@ export const TaskDetail: React.FC = () => {
   const [selectedStepForAdd, setSelectedStepForAdd] = useState<string | null>(null);
   const [isRewritingTask, setIsRewritingTask] = useState(false);
   const [isAddingStep, setIsAddingStep] = useState<string | null>(null);
-  const [enrichingSteps, setEnrichingSteps] = useState<Set<string>>(new Set());
   const [savingNoteSteps, setSavingNoteSteps] = useState<Set<string>>(new Set());
+
+  // Enrichment polling hook
+  const handleStepsRefresh = useCallback((newSteps: StepWithMetadata[]) => {
+    setSteps(newSteps);
+  }, []);
+
+  const {isEnriching, startPolling: startEnrichmentPolling} = useEnrichmentPolling({
+    taskId: task?.id || null,
+    onStepsRefresh: handleStepsRefresh,
+    pollingInterval: 2000,
+    maxPolls: 150,
+  });
 
   useEffect(() => {
     console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
@@ -53,6 +72,16 @@ export const TaskDetail: React.FC = () => {
       setIsLoading(false);
     }
   }, [taskIdPrefix, session?.userId]);
+
+  // Start enrichment polling if navigated with enrichmentQueueId (e.g., after task creation)
+  useEffect(() => {
+    if (locationState?.enrichmentQueueId && task?.id) {
+      console.log('Starting enrichment polling from navigation state:', locationState.enrichmentQueueId);
+      startEnrichmentPolling(locationState.enrichmentQueueId);
+      // Clear the state so we don't re-trigger on subsequent renders
+      navigate(location.pathname, {replace: true, state: {}});
+    }
+  }, [locationState?.enrichmentQueueId, task?.id, startEnrichmentPolling, navigate, location.pathname]);
 
   const loadTaskDetails = async (idPrefix: string) => {
     console.log('loadTaskDetails called with:', { idPrefix, userId: session?.userId });
@@ -120,38 +149,15 @@ export const TaskDetail: React.FC = () => {
       const response = await apiClient.updateStep(stepId, {
         is_completed: newState,
       });
-      console.log('Step updated successfully in database');
+      console.log('Step update response:', response);
+      console.log('enrichment_queue_id:', response.enrichment_queue_id);
 
-      // If there's an enrichment queue, poll for completion
+      // If there's an enrichment queue, start polling
       if (response.enrichment_queue_id) {
-        // Mark step as enriching
-        setEnrichingSteps(prev => new Set(prev).add(stepId));
-
-        // Poll for enrichment completion
-        apiClient.pollEnrichmentStatus(
-          response.enrichment_queue_id,
-          async () => {
-            // On complete, refresh steps to get new metadata
-            if (task?.id) {
-              const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
-              setSteps(stepsResponse.steps);
-            }
-            // Remove from enriching set
-            setEnrichingSteps(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(stepId);
-              return newSet;
-            });
-          },
-          () => {
-            // On error, just remove from enriching set
-            setEnrichingSteps(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(stepId);
-              return newSet;
-            });
-          }
-        );
+        console.log('Starting enrichment polling for queue:', response.enrichment_queue_id);
+        startEnrichmentPolling(response.enrichment_queue_id);
+      } else {
+        console.log('No enrichment_queue_id returned - enrichment not triggered');
       }
 
       // Refresh task to get auto-complete status from backend
@@ -352,13 +358,21 @@ export const TaskDetail: React.FC = () => {
         insert_after_step_id: selectedStepForAdd,
       });
 
-      // Poll for completion
-      await apiClient.pollQueueStatus(response.queue_id);
+      // Poll for step creation completion
+      const queueStatus = await apiClient.pollQueueStatus(response.queue_id);
+      console.log('Add step queue result:', queueStatus);
 
       // Reload steps after adding
       if (task?.id) {
         const stepsResponse = await apiClient.getTaskSteps(task.id, {include_metadata: true});
         setSteps(stepsResponse.steps);
+      }
+
+      // Start enrichment polling if queue returned enrichment_queue_id in result
+      const enrichmentQueueId = queueStatus.result?.enrichment_queue_id;
+      if (enrichmentQueueId) {
+        console.log('Starting enrichment polling after add step:', enrichmentQueueId);
+        startEnrichmentPolling(enrichmentQueueId);
       }
 
       // Refresh task lists
@@ -562,6 +576,7 @@ export const TaskDetail: React.FC = () => {
                 {completedCount} of {totalCount} steps complete
               </Text>
             </View>
+            <EnrichmentBanner visible={isEnriching} />
             <ScrollView style={styles.stepsList}>
               {steps.length === 0 ? (
                 <Text style={styles.emptyText}>No steps yet</Text>
@@ -583,7 +598,7 @@ export const TaskDetail: React.FC = () => {
                     isSplitting={isSplitting === step.id}
                     isRewriting={isRewriting === step.id}
                     isAddingAfter={isAddingStep === step.id}
-                    isEnriching={enrichingSteps.has(step.id)}
+                    isEnriching={isEnriching}
                     isSavingNote={savingNoteSteps.has(step.id)}
                   />
                 ))

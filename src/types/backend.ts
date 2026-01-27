@@ -85,12 +85,18 @@ export interface StepWithMetadata extends Step {
 export interface QueueStatus {
   queue_id: string;
   status: 'pending' | 'processing' | 'complete' | 'failed';
-  request_type: 'new_task' | 'new_step' | 'split_step';
+  request_type: 'new_task' | 'new_step' | 'split_step' | 'enrich_task';
   result: {
     task_id?: string;
     step_count?: number;
     step_id?: string;
     new_step_count?: number;
+    // Enrichment queue ID returned after task/step creation
+    enrichment_queue_id?: string | null;
+    // Enrichment results (when request_type is 'enrich_task')
+    enriched_steps?: number;
+    total_links_added?: number;
+    drafts_created?: number;
   } | null;
   error_message: string | null;
   created_at: string;
