@@ -1,7 +1,7 @@
 import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking, TextInput} from 'react-native';
 import {createPortal} from 'react-dom';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote, Copy, Mail} from 'lucide-react-native';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote, Copy, Mail, ChevronDown, ChevronUp} from 'lucide-react-native';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
@@ -95,6 +95,7 @@ export const Step: React.FC<StepProps> = ({
   );
   const copyDraft = copyDraftMetadata?.value;
   const [isCopied, setIsCopied] = useState(false);
+  const [isDraftExpanded, setIsDraftExpanded] = useState(false);
 
   // Handle copying draft content to clipboard
   const handleCopyDraft = async () => {
@@ -328,7 +329,10 @@ export const Step: React.FC<StepProps> = ({
                       {copyDraft.draft_type === 'email' ? 'Email' : 'Text'}
                     </Text>
                     <Text style={styles.draftSubject}>{copyDraft.draft_title}</Text>
-                    <Text style={styles.draftBody} numberOfLines={3}>
+                    <Text
+                      style={styles.draftBody}
+                      numberOfLines={isDraftExpanded ? undefined : 3}
+                    >
                       {copyDraft.draft_content}
                     </Text>
                     {copyDraft.customization_tips && (
@@ -336,6 +340,19 @@ export const Step: React.FC<StepProps> = ({
                         Tip: {copyDraft.customization_tips}
                       </Text>
                     )}
+                    <TouchableOpacity
+                      style={styles.draftExpandToggle}
+                      onPress={() => setIsDraftExpanded(!isDraftExpanded)}
+                    >
+                      {isDraftExpanded ? (
+                        <ChevronUp size={14} color={colors.indigo[600]} strokeWidth={1.5} />
+                      ) : (
+                        <ChevronDown size={14} color={colors.indigo[600]} strokeWidth={1.5} />
+                      )}
+                      <Text style={styles.draftExpandText}>
+                        {isDraftExpanded ? 'Show less' : 'Show more'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                   <View style={styles.draftActions}>
                     <TouchableOpacity
@@ -889,6 +906,20 @@ const styles = StyleSheet.create({
   },
   copiedText: {
     color: colors.success[600],
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+  },
+  draftExpandToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
+  },
+  draftExpandText: {
+    color: colors.indigo[600],
     fontSize: 12,
     fontFamily: 'Inter',
     fontWeight: '500',
