@@ -51,6 +51,11 @@ export const TaskDetail: React.FC = () => {
 
   // Enrichment polling hook
   const handleStepsRefresh = useCallback((newSteps: StepWithMetadata[]) => {
+    console.log('[TaskDetail] handleStepsRefresh called with', newSteps.length, 'steps');
+    // Log metadata for first step to see if it has links
+    if (newSteps[0]?.metadata) {
+      console.log('[TaskDetail] First step metadata:', JSON.stringify(newSteps[0].metadata));
+    }
     setSteps(newSteps);
   }, []);
 
@@ -82,6 +87,16 @@ export const TaskDetail: React.FC = () => {
       navigate(location.pathname, {replace: true, state: {}});
     }
   }, [locationState?.enrichmentQueueId, task?.id, startEnrichmentPolling, navigate, location.pathname]);
+
+  // Debug: log when steps state changes
+  useEffect(() => {
+    console.log('[TaskDetail] Steps state updated:', steps.length, 'steps');
+    if (steps[0]?.metadata) {
+      const linksCount = steps[0].metadata.filter(m => m.field === 'helpful_links').length;
+      const draftsCount = steps[0].metadata.filter(m => m.field === 'copy_draft').length;
+      console.log('[TaskDetail] First step has', linksCount, 'helpful_links,', draftsCount, 'copy_drafts');
+    }
+  }, [steps]);
 
   const loadTaskDetails = async (idPrefix: string) => {
     console.log('loadTaskDetails called with:', { idPrefix, userId: session?.userId });
