@@ -26,6 +26,19 @@ export function useEnrichmentPolling({
   const pollCountRef = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Use refs to avoid stale closures in setTimeout
+  const taskIdRef = useRef(taskId);
+  const onStepsRefreshRef = useRef(onStepsRefresh);
+
+  // Keep refs up to date
+  useEffect(() => {
+    taskIdRef.current = taskId;
+  }, [taskId]);
+
+  useEffect(() => {
+    onStepsRefreshRef.current = onStepsRefresh;
+  }, [onStepsRefresh]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -61,12 +74,14 @@ export function useEnrichmentPolling({
         const status = await apiClient.getQueueStatus(queueId);
         console.log('[useEnrichmentPolling] Queue status:', status.status);
 
-        // 2. Refresh steps to get latest metadata
-        if (taskId) {
-          const stepsResponse = await apiClient.getTaskSteps(taskId, {
+        // 2. Refresh steps to get latest metadata (use refs to avoid stale closures)
+        const currentTaskId = taskIdRef.current;
+        if (currentTaskId) {
+          const stepsResponse = await apiClient.getTaskSteps(currentTaskId, {
             include_metadata: true,
           });
-          onStepsRefresh(stepsResponse.steps);
+          console.log('[useEnrichmentPolling] Refreshing steps:', stepsResponse.steps.length);
+          onStepsRefreshRef.current(stepsResponse.steps);
         }
 
         // 3. Check if complete
@@ -99,13 +114,13 @@ export function useEnrichmentPolling({
         timeoutRef.current = setTimeout(() => poll(queueId), pollingInterval);
       }
     },
-    [taskId, onStepsRefresh, pollingInterval, maxPolls, stopPolling]
+    [pollingInterval, maxPolls, stopPolling]
   );
 
   const startPolling = useCallback(
     (queueId: string) => {
       console.log('[useEnrichmentPolling] Starting polling for queue:', queueId);
-      console.log('[useEnrichmentPolling] taskId:', taskId);
+      console.log('[useEnrichmentPolling] taskId:', taskIdRef.current);
 
       // Cancel any existing polling
       stopPolling();
@@ -118,7 +133,7 @@ export function useEnrichmentPolling({
       // Start immediately
       poll(queueId);
     },
-    [poll, stopPolling, taskId]
+    [poll, stopPolling]
   );
 
   return {
