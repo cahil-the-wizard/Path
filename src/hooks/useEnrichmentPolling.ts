@@ -81,6 +81,11 @@ export function useEnrichmentPolling({
             include_metadata: true,
           });
           console.log('[useEnrichmentPolling] Refreshing steps:', stepsResponse.steps.length);
+          // Log the actual metadata from the API response
+          if (stepsResponse.steps[0]) {
+            console.log('[useEnrichmentPolling] API response - first step metadata:',
+              JSON.stringify(stepsResponse.steps[0].metadata));
+          }
           onStepsRefreshRef.current(stepsResponse.steps);
         }
 
