@@ -35,7 +35,6 @@ export const NewTask: React.FC = () => {
 
       // Poll for completion
       const queueStatus = await apiClient.pollQueueStatus(createResponse.queue_id);
-      console.log('Task creation queue result:', queueStatus);
 
       if (queueStatus.result?.task_id) {
         // Fetch the task details to get the title for the slug
@@ -50,7 +49,6 @@ export const NewTask: React.FC = () => {
 
         // Navigate to the new task using slug, passing enrichment queue ID if present
         const enrichmentQueueId = queueStatus.result?.enrichment_queue_id;
-        console.log('Enrichment queue ID from result:', enrichmentQueueId);
         const navigationState = enrichmentQueueId
           ? {state: {enrichmentQueueId}}
           : undefined;

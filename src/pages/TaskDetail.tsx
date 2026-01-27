@@ -51,8 +51,6 @@ export const TaskDetail: React.FC = () => {
 
   // Enrichment polling hook
   const handleStepsRefresh = useCallback((newSteps: StepWithMetadata[]) => {
-    console.log('[TaskDetail] handleStepsRefresh called with', newSteps.length, 'steps');
-    // Force new object references to trigger re-render in Step components
     setSteps(newSteps.map(step => ({...step})));
   }, []);
 
@@ -64,13 +62,9 @@ export const TaskDetail: React.FC = () => {
   });
 
   useEffect(() => {
-    console.log('TaskDetail useEffect:', { taskSlug, taskIdPrefix, session });
     if (taskIdPrefix && session?.userId) {
       loadTaskDetails(taskIdPrefix);
-    } else if (taskIdPrefix && !session?.userId) {
-      console.log('Waiting for session...');
-      // Session not ready yet, keep loading state
-    } else {
+    } else if (!taskIdPrefix) {
       setIsLoading(false);
     }
   }, [taskIdPrefix, session?.userId]);
@@ -78,19 +72,11 @@ export const TaskDetail: React.FC = () => {
   // Start enrichment polling if navigated with enrichmentQueueId (e.g., after task creation)
   useEffect(() => {
     if (locationState?.enrichmentQueueId && task?.id) {
-      console.log('Starting enrichment polling from navigation state:', locationState.enrichmentQueueId);
       startEnrichmentPolling(locationState.enrichmentQueueId);
       // Clear the state so we don't re-trigger on subsequent renders
       navigate(location.pathname, {replace: true, state: {}});
     }
   }, [locationState?.enrichmentQueueId, task?.id, startEnrichmentPolling, navigate, location.pathname]);
-
-  // Debug: log when steps state changes
-  useEffect(() => {
-    const totalLinks = steps.reduce((sum, s) => sum + (s.metadata?.filter(m => m.field === 'helpful_links').length || 0), 0);
-    const totalDrafts = steps.reduce((sum, s) => sum + (s.metadata?.filter(m => m.field === 'copy_draft').length || 0), 0);
-    console.log(`[TaskDetail] Steps updated: ${steps.length} steps, ${totalLinks} total links, ${totalDrafts} total drafts`);
-  }, [steps]);
 
   const loadTaskDetails = async (idPrefix: string) => {
     console.log('loadTaskDetails called with:', { idPrefix, userId: session?.userId });
@@ -139,8 +125,6 @@ export const TaskDetail: React.FC = () => {
   };
 
   const handleToggleStep = async (stepId: string, currentState: boolean) => {
-    console.log('Toggle step clicked:', { stepId, currentState, newState: !currentState });
-
     const newState = !currentState;
 
     // Update local step state IMMEDIATELY for instant feedback
@@ -151,22 +135,16 @@ export const TaskDetail: React.FC = () => {
           : step
       )
     );
-    console.log('Local step state updated immediately');
 
     // Update backend in the background
     try {
       const response = await apiClient.updateStep(stepId, {
         is_completed: newState,
       });
-      console.log('Step update response:', response);
-      console.log('enrichment_queue_id:', response.enrichment_queue_id);
 
       // If there's an enrichment queue, start polling
       if (response.enrichment_queue_id) {
-        console.log('Starting enrichment polling for queue:', response.enrichment_queue_id);
         startEnrichmentPolling(response.enrichment_queue_id);
-      } else {
-        console.log('No enrichment_queue_id returned - enrichment not triggered');
       }
 
       // Refresh task to get auto-complete status from backend
@@ -176,7 +154,6 @@ export const TaskDetail: React.FC = () => {
         const updatedTask = tasksResponse.tasks.find(t => t.id.startsWith(taskIdPrefix));
         if (updatedTask) {
           setTask(updatedTask);
-          console.log('Task status refreshed:', updatedTask.status);
         }
       }
 
@@ -369,7 +346,6 @@ export const TaskDetail: React.FC = () => {
 
       // Poll for step creation completion
       const queueStatus = await apiClient.pollQueueStatus(response.queue_id);
-      console.log('Add step queue result:', queueStatus);
 
       // Reload steps after adding
       if (task?.id) {
@@ -380,7 +356,6 @@ export const TaskDetail: React.FC = () => {
       // Start enrichment polling if queue returned enrichment_queue_id in result
       const enrichmentQueueId = queueStatus.result?.enrichment_queue_id;
       if (enrichmentQueueId) {
-        console.log('Starting enrichment polling after add step:', enrichmentQueueId);
         startEnrichmentPolling(enrichmentQueueId);
       }
 
