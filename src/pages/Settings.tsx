@@ -28,7 +28,7 @@ export const Settings: React.FC = () => {
 
   const handleSignOut = async () => {
     await authService.signOut();
-    navigate('/auth');
+    navigate('/auth/login');
   };
 
   const handleSaveName = () => {

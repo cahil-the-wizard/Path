@@ -118,6 +118,7 @@ export interface TaskSummary {
 // API Response types
 export interface GetTasksResponse {
   tasks: Task[];
+  total: number;
 }
 
 export interface GetTaskStepsResponse {

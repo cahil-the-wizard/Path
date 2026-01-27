@@ -19,6 +19,8 @@ import {
   LogOut,
   Settings as SettingsIcon,
   Sparkles,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
 import {colors, typography} from '../theme/tokens';
@@ -71,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const navigate = useNavigate();
   const location = useLocation();
-  const {tasks, isLoading: loadingTasks, refreshTasks} = useTasks();
+  const {tasks, isLoading: loadingTasks, refreshTasks, currentPage: tasksPage, totalPages, setCurrentPage} = useTasks();
   const {signOut, userData} = useAuth();
 
   // Get user's name and first initial for avatar
@@ -94,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
     try {
       await signOut();
       setShowProfileMenu(false);
-      navigate('/auth');
+      navigate('/auth/login');
     } catch (error) {
       Alert.alert('Error', 'Failed to sign out');
     }
@@ -256,6 +258,28 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                   ))
                 )}
               </ScrollView>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <Animated.View style={[styles.pagination, {opacity: opacityAnim}]}>
+                  <TouchableOpacity
+                    style={[styles.paginationButton, tasksPage === 1 && styles.paginationButtonDisabled]}
+                    onPress={() => tasksPage > 1 && setCurrentPage(tasksPage - 1)}
+                    disabled={tasksPage === 1}
+                  >
+                    <ChevronLeft size={16} color={tasksPage === 1 ? colors.gray.light[300] : colors.gray.light[600]} strokeWidth={1.5} />
+                  </TouchableOpacity>
+                  <Text style={styles.paginationText}>
+                    {tasksPage} / {totalPages}
+                  </Text>
+                  <TouchableOpacity
+                    style={[styles.paginationButton, tasksPage === totalPages && styles.paginationButtonDisabled]}
+                    onPress={() => tasksPage < totalPages && setCurrentPage(tasksPage + 1)}
+                    disabled={tasksPage === totalPages}
+                  >
+                    <ChevronRight size={16} color={tasksPage === totalPages ? colors.gray.light[300] : colors.gray.light[600]} strokeWidth={1.5} />
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
             </View>
           )}
         </Animated.View>
@@ -540,5 +564,36 @@ const styles = StyleSheet.create({
     fontSize: typography.body.small.fontSize,
     fontFamily: typography.body.small.fontFamily,
     color: colors.gray.light[500],
+  },
+  pagination: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray.light[200],
+  },
+  paginationButton: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 6,
+    backgroundColor: colors.gray.light[100],
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: 'transparent',
+    // @ts-ignore
+    cursor: 'default',
+  },
+  paginationText: {
+    fontSize: 12,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    color: colors.gray.light[600],
   },
 });
