@@ -5,8 +5,8 @@ import type {StepWithMetadata, QueueStatus} from '../types/backend';
 interface UseEnrichmentPollingOptions {
   taskId: string | null;
   onStepsRefresh: (steps: StepWithMetadata[]) => void;
-  pollingInterval?: number; // Default: 5000ms
-  maxPolls?: number; // Default: 60 (5 min timeout)
+  pollingInterval?: number; // Default: 2000ms
+  maxPolls?: number; // Default: 150 (5 min timeout at 2s intervals)
 }
 
 interface EnrichmentResult {
@@ -18,8 +18,8 @@ interface EnrichmentResult {
 export function useEnrichmentPolling({
   taskId,
   onStepsRefresh,
-  pollingInterval = 5000,
-  maxPolls = 60,
+  pollingInterval = 2000,
+  maxPolls = 150,
 }: UseEnrichmentPollingOptions) {
   const [isEnriching, setIsEnriching] = useState(false);
   const [currentQueueId, setCurrentQueueId] = useState<string | null>(null);

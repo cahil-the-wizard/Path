@@ -57,8 +57,8 @@ export const TaskDetail: React.FC = () => {
   const {isEnriching, startPolling: startEnrichmentPolling} = useEnrichmentPolling({
     taskId: task?.id || null,
     onStepsRefresh: handleStepsRefresh,
-    pollingInterval: 5000,
-    maxPolls: 60,
+    pollingInterval: 2000,
+    maxPolls: 150,
   });
 
   useEffect(() => {

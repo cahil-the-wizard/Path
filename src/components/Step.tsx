@@ -246,13 +246,7 @@ export const Step: React.FC<StepProps> = ({
               </>
             )}
 
-            {/* Enriching Chip */}
-            {!completed && isEnriching && (
-              <View style={styles.enrichingChip}>
-                <ActivityIndicator size={12} color={colors.green[600]} />
-                <Text style={styles.enrichingChipText}>Finding helpful links</Text>
-              </View>
-            )}
+            {/* Enriching indicator removed - global banner shows instead */}
 
             {/* Helpful Links */}
             {!completed && !isEnriching && helpfulLinks.length > 0 && (
