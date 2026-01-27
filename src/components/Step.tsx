@@ -83,6 +83,9 @@ export const Step: React.FC<StepProps> = ({
   const helpfulLinksMetadata = metadata?.find(m => m.field === 'helpful_links');
   const helpfulLinks = helpfulLinksMetadata?.value?.links || [];
 
+  // Debug: log when Step renders with metadata
+  console.log(`[Step "${title.substring(0, 20)}..."] render - metadata:`, metadata?.length || 0, 'items, links:', helpfulLinks.length);
+
   // Find user note metadata
   const userNoteMetadata = metadata?.find(
     (m): m is UserNoteStepMetadata => m.field === 'user_note'
