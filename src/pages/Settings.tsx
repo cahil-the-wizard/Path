@@ -45,6 +45,14 @@ export const Settings: React.FC = () => {
   const [reminderPeriod, setReminderPeriod] = useState<'AM' | 'PM'>('AM');
   const [showTimezoneDropdown, setShowTimezoneDropdown] = useState(false);
 
+  // Internal test reminder state
+  const [userId, setUserId] = useState<string | null>(null);
+  const [sendingTestReminder, setSendingTestReminder] = useState(false);
+  const [testReminderResult, setTestReminderResult] = useState<string | null>(null);
+
+  // Check if user is internal (totallywizard.dev)
+  const isInternalUser = email.endsWith('@totallywizard.dev');
+
   useEffect(() => {
     // Load user data from session
     const session = authService.getSession();
@@ -53,6 +61,7 @@ export const Settings: React.FC = () => {
       setName(userData.name || '');
       setEmail(userData.email || session.userId);
       setAvatarUrl(userData.avatarUrl || null);
+      setUserId(session.userId);
     }
 
     // Load preferences from API
@@ -147,6 +156,37 @@ export const Settings: React.FC = () => {
 
   const getTimezoneLabel = (value: string) => {
     return TIMEZONES.find(tz => tz.value === value)?.label || value;
+  };
+
+  const handleSendTestReminder = async () => {
+    if (!userId) return;
+
+    try {
+      setSendingTestReminder(true);
+      setTestReminderResult(null);
+
+      const response = await fetch('https://path-worker.fly.dev/test-reminder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({user_id: userId}),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setTestReminderResult(`Sent to ${data.sent_to}`);
+      } else {
+        setTestReminderResult(`Error: ${data.error || 'Failed to send'}`);
+      }
+    } catch (error) {
+      setTestReminderResult('Error: Network request failed');
+    } finally {
+      setSendingTestReminder(false);
+      // Clear result after 5 seconds
+      setTimeout(() => setTestReminderResult(null), 5000);
+    }
   };
 
   const handleSignOut = async () => {
@@ -414,6 +454,41 @@ export const Settings: React.FC = () => {
                     <ActivityIndicator size="small" color={colors.green[600]} />
                     <Text style={styles.savingText}>Saving...</Text>
                   </View>
+                )}
+
+                {/* Test Reminder - Internal Only */}
+                {isInternalUser && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.settingRow}>
+                      <View style={styles.settingLeft}>
+                        <Text style={styles.settingLabel}>Test daily reminder email</Text>
+                        <Text style={styles.settingDescription}>Internal only</Text>
+                      </View>
+                      <View style={styles.settingRight}>
+                        {testReminderResult ? (
+                          <Text style={[
+                            styles.testResultText,
+                            testReminderResult.startsWith('Error') && styles.testResultError
+                          ]}>
+                            {testReminderResult}
+                          </Text>
+                        ) : (
+                          <TouchableOpacity
+                            style={styles.sendNowButton}
+                            onPress={handleSendTestReminder}
+                            disabled={sendingTestReminder}
+                          >
+                            {sendingTestReminder ? (
+                              <ActivityIndicator size="small" color="white" />
+                            ) : (
+                              <Text style={styles.sendNowButtonText}>Send now</Text>
+                            )}
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  </>
                 )}
               </>
             )}
@@ -794,6 +869,29 @@ const styles = StyleSheet.create({
   savingText: {
     fontSize: typography.body.small.fontSize,
     fontFamily: typography.body.small.fontFamily,
+    color: colors.gray.light[500],
+  },
+  sendNowButton: {
+    backgroundColor: colors.green[500],
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    minWidth: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendNowButtonText: {
+    color: 'white',
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    fontWeight: '600',
+  },
+  testResultText: {
+    fontSize: typography.body.small.fontSize,
+    fontFamily: typography.body.small.fontFamily,
+    color: colors.green[600],
+  },
+  testResultError: {
     color: colors.gray.light[500],
   },
 });
