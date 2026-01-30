@@ -193,37 +193,24 @@ export const Settings: React.FC = () => {
           <View style={styles.card}>
             {/* Profile Picture */}
             <View style={styles.profileSection}>
-              <TouchableOpacity onPress={handleAvatarUpload}>
-                {avatarUrl ? (
-                  <Image source={{uri: avatarUrl}} style={styles.avatarImage} />
-                ) : (
-                  <View style={styles.avatar}>
-                    <User size={32} color={colors.gray.light[600]} />
-                  </View>
-                )}
-              </TouchableOpacity>
+              {avatarUrl ? (
+                <Image source={{uri: avatarUrl}} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatar}>
+                  <User size={32} color={colors.gray.light[600]} />
+                </View>
+              )}
               <Text style={styles.username}>{email}</Text>
-              <TouchableOpacity style={styles.changeButton} onPress={handleAvatarUpload}>
-                <Text style={styles.changeButtonText}>Change avatar</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
 
-            {/* Full Name */}
+            {/* Full Name - display only */}
             <View style={styles.settingRow}>
               <View style={styles.settingLeft}>
                 <Text style={styles.settingLabel}>Full Name</Text>
                 {name && <Text style={styles.settingValue}>{name}</Text>}
               </View>
-              <TouchableOpacity
-                style={styles.settingRight}
-                onPress={() => {
-                  setEditingName(name);
-                  setShowNameModal(true);
-                }}>
-                <Text style={styles.changeButtonText}>Change full name</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
@@ -438,18 +425,6 @@ export const Settings: React.FC = () => {
           <Text style={styles.sectionTitle}>System</Text>
 
           <View style={styles.card}>
-            {/* Support */}
-            <TouchableOpacity style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Text style={styles.settingLabel}>Support</Text>
-              </View>
-              <View style={styles.settingRight}>
-                <Text style={styles.changeButtonText}>Contact</Text>
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
             {/* Sign out */}
             <TouchableOpacity style={styles.settingRow} onPress={handleSignOut}>
               <View style={styles.settingLeft}>
@@ -458,19 +433,6 @@ export const Settings: React.FC = () => {
               </View>
               <View style={styles.settingRight}>
                 <Text style={styles.signOutButtonText}>Sign out</Text>
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.divider} />
-
-            {/* Sign out of all sessions */}
-            <TouchableOpacity style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <Text style={styles.settingLabel}>Sign out of all sessions</Text>
-                <Text style={styles.settingDescription}>Devices or browsers where you are signed in</Text>
-              </View>
-              <View style={styles.settingRight}>
-                <Text style={styles.changeButtonText}>Sign out of all sessions</Text>
               </View>
             </TouchableOpacity>
 
