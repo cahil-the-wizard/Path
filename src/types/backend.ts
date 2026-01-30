@@ -221,3 +221,22 @@ export interface GetTaskStepsParams {
 export interface GetTasksSummaryParams {
   user_id?: string;
 }
+
+// User Preferences
+export interface UserPreferences {
+  timezone: string;
+  daily_digest_enabled: boolean;
+  preferred_reminder_hour: number;
+  preferred_reminder_minute: number;
+}
+
+export interface GetPreferencesResponse {
+  preferences: UserPreferences;
+}
+
+export interface UpdatePreferencesRequest {
+  timezone?: string;
+  daily_digest_enabled?: boolean;
+  preferred_reminder_hour?: number;
+  preferred_reminder_minute?: number;
+}
