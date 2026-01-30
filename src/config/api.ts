@@ -18,4 +18,5 @@ export const API_ENDPOINTS = {
   getQueueStatus: (queueId: string) => `/get-queue-status/${queueId}`,
   getTasksSummary: '/get-tasks-summary',
   updateStepNote: (stepId: string) => `/update-step-note/${stepId}`,
+  updatePreferences: '/update-preferences',
 } as const;

@@ -23,6 +23,8 @@ import type {
   GetTasksParams,
   GetTaskStepsParams,
   GetTasksSummaryParams,
+  GetPreferencesResponse,
+  UpdatePreferencesRequest,
 } from '../types/backend';
 
 class ApiClient {
@@ -312,6 +314,18 @@ class ApiClient {
     const endpoint = query ? `${API_ENDPOINTS.getTasksSummary}?${query}` : API_ENDPOINTS.getTasksSummary;
 
     return this.request<GetTasksSummaryResponse>(endpoint);
+  }
+
+  // User Preferences
+  async getPreferences(): Promise<GetPreferencesResponse> {
+    return this.request<GetPreferencesResponse>(API_ENDPOINTS.updatePreferences);
+  }
+
+  async updatePreferences(data: UpdatePreferencesRequest): Promise<GetPreferencesResponse> {
+    return this.request<GetPreferencesResponse>(API_ENDPOINTS.updatePreferences, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 }
 
