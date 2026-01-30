@@ -63,13 +63,19 @@ export const Settings: React.FC = () => {
     try {
       setLoadingPreferences(true);
       const response = await apiClient.getPreferences();
-      const prefs = response.preferences;
+      const prefs = response?.preferences;
 
-      setRemindersEnabled(prefs.daily_digest_enabled);
-      setTimezone(prefs.timezone);
+      if (!prefs) {
+        // Use defaults if no preferences returned
+        console.log('No preferences found, using defaults');
+        return;
+      }
+
+      setRemindersEnabled(prefs.daily_digest_enabled ?? true);
+      setTimezone(prefs.timezone ?? 'America/New_York');
 
       // Convert 24h to 12h format
-      const hour24 = prefs.preferred_reminder_hour;
+      const hour24 = prefs.preferred_reminder_hour ?? 7;
       if (hour24 === 0) {
         setReminderHour('12');
         setReminderPeriod('AM');
@@ -83,9 +89,10 @@ export const Settings: React.FC = () => {
         setReminderHour(String(hour24));
         setReminderPeriod('AM');
       }
-      setReminderMinute(String(prefs.preferred_reminder_minute).padStart(2, '0'));
+      setReminderMinute(String(prefs.preferred_reminder_minute ?? 45).padStart(2, '0'));
     } catch (error) {
       console.error('Failed to load preferences:', error);
+      // Keep defaults on error
     } finally {
       setLoadingPreferences(false);
     }

@@ -7,7 +7,7 @@ import {TodayV2} from './src/pages/TodayV2';
 import {TaskDetail} from './src/pages/TaskDetail';
 import {TasksList} from './src/pages/TasksList';
 import {Auth} from './src/pages/Auth';
-// import {Settings} from './src/pages/Settings';
+import {Settings} from './src/pages/Settings';
 import {colors} from './src/theme/tokens';
 import {TasksProvider} from './src/contexts/TasksContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
@@ -114,14 +114,14 @@ function AppContent(): React.JSX.Element {
                   </ProtectedRoute>
                 }
               />
-              {/* <Route
-              path="/settings"
-              element={
-                <ProtectedRoute isAuthenticated={isAuthenticated}>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            /> */}
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute isAuthenticated={isAuthenticated}>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </View>
         </View>
