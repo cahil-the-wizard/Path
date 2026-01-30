@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {TouchableOpacity, Text, StyleSheet, View, Animated} from 'react-native';
-import {LucideIcon} from 'lucide-react-native';
+import {LucideIcon, Trash2} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 
 interface NavItemProps {
@@ -8,6 +8,7 @@ interface NavItemProps {
   icon?: LucideIcon;
   active?: boolean;
   onPress?: () => void;
+  onDelete?: () => void;
   collapsed?: boolean;
   textOpacity?: Animated.Value;
 }
@@ -17,12 +18,19 @@ export const NavItem: React.FC<NavItemProps> = ({
   icon: Icon,
   active = false,
   onPress,
+  onDelete,
   collapsed = false,
   textOpacity,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [isDeleteHovered, setIsDeleteHovered] = useState(false);
   const iconColor = active ? colors.green[600] : colors.gray.light[950];
   const textColor = active ? colors.green[600] : colors.gray.light[950];
+
+  const handleDeleteClick = (e: any) => {
+    e.stopPropagation();
+    onDelete?.();
+  };
 
   return (
     <TouchableOpacity
@@ -58,6 +66,17 @@ export const NavItem: React.FC<NavItemProps> = ({
           ellipsizeMode="tail">
           {label}
         </Text>
+      )}
+      {/* Delete icon on hover */}
+      {!collapsed && onDelete && isHovered && (
+        <TouchableOpacity
+          style={[styles.deleteButton, isDeleteHovered && styles.deleteButtonHovered]}
+          onPress={handleDeleteClick}
+          onMouseEnter={() => setIsDeleteHovered(true)}
+          onMouseLeave={() => setIsDeleteHovered(false)}
+        >
+          <Trash2 size={14} color={isDeleteHovered ? colors.gray.light[700] : colors.gray.light[400]} strokeWidth={1.5} />
+        </TouchableOpacity>
       )}
     </TouchableOpacity>
   );
@@ -100,5 +119,16 @@ const styles = StyleSheet.create({
     fontSize: typography.body.small.fontSize,
     fontWeight: String(typography.body.small.fontWeight) as any,
     lineHeight: typography.body.small.lineHeight,
+  },
+  deleteButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+  },
+  deleteButtonHovered: {
+    backgroundColor: colors.gray.light[300],
   },
 });

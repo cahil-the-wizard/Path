@@ -139,9 +139,12 @@ class ApiClient {
   }
 
   async deleteTask(taskId: string): Promise<{success: boolean}> {
-    return this.request<{success: boolean}>(API_ENDPOINTS.deleteTask(taskId), {
-      method: 'DELETE',
+    // Soft delete by updating status to 'deleted'
+    await this.request<UpdateTaskResponse>(API_ENDPOINTS.updateTask(taskId), {
+      method: 'PUT',
+      body: JSON.stringify({status: 'deleted'}),
     });
+    return {success: true};
   }
 
   async duplicateTask(taskId: string): Promise<CreateTaskResponse> {
