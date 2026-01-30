@@ -23,11 +23,13 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
+import {ConfirmationModal} from './ConfirmationModal';
 import {colors, typography} from '../theme/tokens';
 import {useAuth} from '../contexts/AuthContext';
 import {useNavigate, useLocation} from 'react-router-dom';
 import {useTasks} from '../contexts/TasksContext';
 import {generateTaskSlug, getTaskIdFromSlug} from '../utils/slug';
+import {apiClient} from '../services/apiClient';
 
 interface AddTaskButtonProps {
   collapsed: boolean;
@@ -69,6 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const [collapsed, setCollapsed] = useState(false);
   const [hoveredOnLogo, setHoveredOnLogo] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<{id: string; title: string} | null>(null);
   const widthAnim = useRef(new Animated.Value(240)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
   const navigate = useNavigate();
@@ -99,6 +102,20 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
       navigate('/auth/login');
     } catch (error) {
       Alert.alert('Error', 'Failed to sign out');
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!taskToDelete) return;
+    try {
+      await apiClient.deleteTask(taskToDelete.id);
+      // If we're viewing the deleted task, navigate away
+      if (currentTaskIdPrefix && taskToDelete.id.startsWith(currentTaskIdPrefix)) {
+        navigate('/');
+      }
+      refreshTasks();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete task');
     }
   };
 
@@ -253,6 +270,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                       collapsed={collapsed}
                       active={currentTaskIdPrefix !== null && task.id.startsWith(currentTaskIdPrefix)}
                       onPress={() => navigate(`/task/${generateTaskSlug(task.title, task.id)}`)}
+                      onDelete={() => setTaskToDelete({id: task.id, title: task.title})}
                       textOpacity={opacityAnim}
                     />
                   ))
@@ -331,6 +349,18 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
             </View>
           )}
         </View>
+
+        {/* Delete Task Confirmation Modal */}
+        <ConfirmationModal
+          visible={taskToDelete !== null}
+          title="Delete Task"
+          message={`Are you sure you want to delete "${taskToDelete?.title}"? This action cannot be undone.`}
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          variant="destructive"
+          onConfirm={handleDeleteTask}
+          onCancel={() => setTaskToDelete(null)}
+        />
       </View>
     </Animated.View>
   );
