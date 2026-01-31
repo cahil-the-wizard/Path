@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput as RNTextInput, Switch, ActivityIndicator} from 'react-native';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, TextInput as RNTextInput, Switch, ActivityIndicator, Linking} from 'react-native';
 import {User, X, ChevronDown} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {authService} from '../services/auth';
@@ -425,6 +425,21 @@ export const Settings: React.FC = () => {
           <Text style={styles.sectionTitle}>System</Text>
 
           <View style={styles.card}>
+            {/* Support */}
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => Linking.openURL('mailto:support@totallywizard.dev')}
+            >
+              <View style={styles.settingLeft}>
+                <Text style={styles.settingLabel}>Support</Text>
+              </View>
+              <View style={styles.settingRight}>
+                <Text style={styles.changeButtonText}>Contact</Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.divider} />
+
             {/* Sign out */}
             <TouchableOpacity style={styles.settingRow} onPress={handleSignOut}>
               <View style={styles.settingLeft}>
