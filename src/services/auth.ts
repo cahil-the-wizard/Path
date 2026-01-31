@@ -144,7 +144,10 @@ class AuthService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error_description || error.msg || 'Sign in failed');
+      // Create error with code for special handling
+      const err = new Error(error.error_description || error.msg || 'Sign in failed');
+      (err as any).code = error.error_code;
+      throw err;
     }
 
     const authData: SupabaseAuthResponse = await response.json();

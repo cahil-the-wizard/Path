@@ -156,9 +156,15 @@ export const Auth: React.FC = () => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
+      const errorCode = (error as any)?.code;
+
       if (mode === 'signup') {
         setErrorToastMessage(errorMessage);
         setShowErrorToast(true);
+      } else if (errorCode === 'email_not_confirmed') {
+        // Show email confirmation screen for unverified accounts
+        setConfirmationEmail(email.trim());
+        setShowEmailConfirmation(true);
       } else {
         Alert.alert('Error', errorMessage);
       }
