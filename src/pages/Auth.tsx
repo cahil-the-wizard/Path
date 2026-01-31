@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity, Animated, useWindowDimensions} from 'react-native';
+import {View, Text, StyleSheet, ActivityIndicator, Alert, Image, TouchableOpacity, Animated, useWindowDimensions, Linking} from 'react-native';
 import {TextInput} from '../components/TextInput';
 import {Button} from '../components/Button';
 import {Toast} from '../components/Toast';
@@ -186,7 +186,12 @@ export const Auth: React.FC = () => {
           </Text>
           <Text style={styles.confirmationSubtext}>
             Didn't receive the email? Check your spam folder or{' '}
-            <Text style={styles.confirmationLink}>contact support</Text>.
+            <Text
+              style={styles.confirmationLink}
+              onPress={() => Linking.openURL('mailto:support@totallywizard.dev')}
+            >
+              contact support
+            </Text>.
           </Text>
         </View>
       </View>
