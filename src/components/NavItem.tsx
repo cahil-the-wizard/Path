@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {TouchableOpacity, Text, StyleSheet, View, Animated} from 'react-native';
-import {LucideIcon, Trash2} from 'lucide-react-native';
+import {LucideIcon, Trash2, CircleCheck} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 
 interface NavItemProps {
@@ -9,6 +9,7 @@ interface NavItemProps {
   active?: boolean;
   onPress?: () => void;
   onDelete?: () => void;
+  onComplete?: () => void;
   collapsed?: boolean;
   textOpacity?: Animated.Value;
 }
@@ -19,17 +20,24 @@ export const NavItem: React.FC<NavItemProps> = ({
   active = false,
   onPress,
   onDelete,
+  onComplete,
   collapsed = false,
   textOpacity,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isDeleteHovered, setIsDeleteHovered] = useState(false);
+  const [isCompleteHovered, setIsCompleteHovered] = useState(false);
   const iconColor = active ? colors.green[600] : colors.gray.light[950];
   const textColor = active ? colors.green[600] : colors.gray.light[950];
 
   const handleDeleteClick = (e: any) => {
     e.stopPropagation();
     onDelete?.();
+  };
+
+  const handleCompleteClick = (e: any) => {
+    e.stopPropagation();
+    onComplete?.();
   };
 
   return (
@@ -67,16 +75,34 @@ export const NavItem: React.FC<NavItemProps> = ({
           {label}
         </Text>
       )}
-      {/* Delete icon on hover */}
-      {!collapsed && onDelete && isHovered && (
-        <TouchableOpacity
-          style={[styles.deleteButton, isDeleteHovered && styles.deleteButtonHovered]}
-          onPress={handleDeleteClick}
-          onMouseEnter={() => setIsDeleteHovered(true)}
-          onMouseLeave={() => setIsDeleteHovered(false)}
-        >
-          <Trash2 size={14} color={isDeleteHovered ? colors.gray.light[700] : colors.gray.light[400]} strokeWidth={1.5} />
-        </TouchableOpacity>
+      {/* Action icons on hover */}
+      {!collapsed && (onComplete || onDelete) && isHovered && (
+        <View style={styles.actionButtons}>
+          {onComplete && (
+            <TouchableOpacity
+              style={[styles.actionButton, isCompleteHovered && styles.actionButtonHovered]}
+              onPress={handleCompleteClick}
+              onMouseEnter={() => setIsCompleteHovered(true)}
+              onMouseLeave={() => setIsCompleteHovered(false)}
+              // @ts-ignore - web-specific attribute for tooltip
+              title="Mark complete"
+            >
+              <CircleCheck size={14} color={isCompleteHovered ? colors.green[600] : colors.gray.light[400]} strokeWidth={1.5} />
+            </TouchableOpacity>
+          )}
+          {onDelete && (
+            <TouchableOpacity
+              style={[styles.actionButton, isDeleteHovered && styles.actionButtonHovered]}
+              onPress={handleDeleteClick}
+              onMouseEnter={() => setIsDeleteHovered(true)}
+              onMouseLeave={() => setIsDeleteHovered(false)}
+              // @ts-ignore - web-specific attribute for tooltip
+              title="Delete"
+            >
+              <Trash2 size={14} color={isDeleteHovered ? colors.gray.light[700] : colors.gray.light[400]} strokeWidth={1.5} />
+            </TouchableOpacity>
+          )}
+        </View>
       )}
     </TouchableOpacity>
   );
@@ -120,15 +146,20 @@ const styles = StyleSheet.create({
     fontWeight: String(typography.body.small.fontWeight) as any,
     lineHeight: typography.body.small.lineHeight,
   },
-  deleteButton: {
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    marginLeft: 4,
+  },
+  actionButton: {
     width: 24,
     height: 24,
     borderRadius: 4,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 4,
   },
-  deleteButtonHovered: {
+  actionButtonHovered: {
     backgroundColor: colors.gray.light[300],
   },
 });
