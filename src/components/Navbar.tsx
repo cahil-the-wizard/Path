@@ -119,6 +119,15 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
     }
   };
 
+  const handleCompleteTask = async (taskId: string) => {
+    try {
+      await apiClient.updateTask(taskId, {status: 'completed'});
+      refreshTasks();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to complete task');
+    }
+  };
+
   const toggleCollapse = () => {
     const toValue = collapsed ? 240 : 60;
     const opacityToValue = collapsed ? 1 : 0;
@@ -270,6 +279,7 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                       collapsed={collapsed}
                       active={currentTaskIdPrefix !== null && task.id.startsWith(currentTaskIdPrefix)}
                       onPress={() => navigate(`/task/${generateTaskSlug(task.title, task.id)}`)}
+                      onComplete={() => handleCompleteTask(task.id)}
                       onDelete={() => setTaskToDelete({id: task.id, title: task.title})}
                       textOpacity={opacityAnim}
                     />
