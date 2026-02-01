@@ -15,6 +15,7 @@ interface TextInputProps {
   onFocus?: () => void;
   onBlur?: () => void;
   onSubmitEditing?: () => void;
+  onKeyPress?: (e: any) => void;
   style?: any;
 }
 
@@ -30,6 +31,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   onFocus,
   onBlur,
   onSubmitEditing,
+  onKeyPress,
   style,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -69,6 +71,7 @@ export const TextInput: React.FC<TextInputProps> = ({
           onFocus={handleFocus}
           onBlur={handleBlur}
           onSubmitEditing={onSubmitEditing}
+          onKeyPress={onKeyPress}
         />
       </View>
       {showPasswordToggle && (
