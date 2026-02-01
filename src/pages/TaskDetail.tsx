@@ -560,7 +560,6 @@ export const TaskDetail: React.FC = () => {
                 {completedCount} of {totalCount} steps complete
               </Text>
             </View>
-            <EnrichmentBanner visible={isEnriching} />
             <ScrollView style={styles.stepsList}>
               {steps.length === 0 ? (
                 <Text style={styles.emptyText}>No steps yet</Text>
@@ -591,6 +590,7 @@ export const TaskDetail: React.FC = () => {
           </View>
         </View>
       </View>
+      <EnrichmentBanner visible={isEnriching} />
     </View>
   );
 };
