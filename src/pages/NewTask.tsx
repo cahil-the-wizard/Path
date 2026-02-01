@@ -91,6 +91,12 @@ export const NewTask: React.FC = () => {
                     onChangeText={setTaskInput}
                     multiline={true}
                     style={styles.input}
+                    onKeyPress={(e: any) => {
+                      if (e.nativeEvent.key === 'Enter' && !e.nativeEvent.shiftKey) {
+                        e.preventDefault();
+                        handleCreateTask();
+                      }
+                    }}
                   />
 
                   <View style={styles.actions}>
@@ -191,7 +197,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     alignSelf: 'stretch',
-    paddingTop: 16,
+    paddingTop: 0,
     paddingBottom: 12,
     backgroundColor: 'white',
     overflow: 'hidden',
@@ -227,5 +233,8 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 0,
     borderColor: 'transparent',
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingVertical: 16,
   },
 });
