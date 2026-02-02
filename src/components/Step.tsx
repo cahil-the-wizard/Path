@@ -1,7 +1,7 @@
 import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking, TextInput} from 'react-native';
 import {createPortal} from 'react-dom';
-import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote, Copy, Mail, ChevronDown, ChevronUp} from 'lucide-react-native';
+import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote, Copy, Send, ChevronDown, ChevronUp} from 'lucide-react-native';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
@@ -96,6 +96,14 @@ export const Step: React.FC<StepProps> = ({
   const copyDraft = copyDraftMetadata?.value;
   const [isCopied, setIsCopied] = useState(false);
   const [isDraftExpanded, setIsDraftExpanded] = useState(false);
+  const [copyHovered, setCopyHovered] = useState(false);
+  const [sendHovered, setSendHovered] = useState(false);
+  const [showCopyTooltip, setShowCopyTooltip] = useState(false);
+  const [showSendTooltip, setShowSendTooltip] = useState(false);
+  const [copyTooltipPosition, setCopyTooltipPosition] = useState({x: 0, y: 0});
+  const [sendTooltipPosition, setSendTooltipPosition] = useState({x: 0, y: 0});
+  const copyButtonRef = useRef<any>(null);
+  const sendButtonRef = useRef<any>(null);
 
   // Handle copying draft content to clipboard
   const handleCopyDraft = async () => {
@@ -103,11 +111,16 @@ export const Step: React.FC<StepProps> = ({
     try {
       await navigator.clipboard.writeText(copyDraft.draft_content);
       setIsCopied(true);
+      setShowCopyTooltip(true);
 
-      // Reset copied state after 2 seconds
+      setTimeout(() => {
+        setShowCopyTooltip(false);
+      }, 1000);
+
+      // Reset copied state after 4 seconds
       setTimeout(() => {
         setIsCopied(false);
-      }, 2000);
+      }, 4000);
     } catch (error) {
       console.error('Failed to copy to clipboard:', error);
     }
@@ -174,7 +187,7 @@ export const Step: React.FC<StepProps> = ({
       const rect = splitButtonRef.current.getBoundingClientRect();
       setSplitTooltipPosition({
         x: rect.left + rect.width / 2,
-        y: rect.top - 8,
+        y: rect.bottom,
       });
     }
   }, [showSplitTooltip]);
@@ -184,7 +197,7 @@ export const Step: React.FC<StepProps> = ({
       const rect = rewriteButtonRef.current.getBoundingClientRect();
       setRewriteTooltipPosition({
         x: rect.left + rect.width / 2,
-        y: rect.top - 8,
+        y: rect.bottom,
       });
     }
   }, [showRewriteTooltip]);
@@ -194,7 +207,7 @@ export const Step: React.FC<StepProps> = ({
       const rect = addAfterButtonRef.current.getBoundingClientRect();
       setAddAfterTooltipPosition({
         x: rect.left + rect.width / 2,
-        y: rect.top - 8,
+        y: rect.bottom,
       });
     }
   }, [showAddAfterTooltip]);
@@ -204,10 +217,30 @@ export const Step: React.FC<StepProps> = ({
       const rect = noteButtonRef.current.getBoundingClientRect();
       setNoteTooltipPosition({
         x: rect.left + rect.width / 2,
-        y: rect.top - 8,
+        y: rect.bottom,
       });
     }
   }, [showNoteTooltip]);
+
+  useEffect(() => {
+    if (showCopyTooltip && copyButtonRef.current) {
+      const rect = copyButtonRef.current.getBoundingClientRect();
+      setCopyTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom,
+      });
+    }
+  }, [showCopyTooltip]);
+
+  useEffect(() => {
+    if (showSendTooltip && sendButtonRef.current) {
+      const rect = sendButtonRef.current.getBoundingClientRect();
+      setSendTooltipPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.bottom,
+      });
+    }
+  }, [showSendTooltip]);
 
   return (
     <View style={styles.wrapper}>
@@ -320,65 +353,49 @@ export const Step: React.FC<StepProps> = ({
             {!completed && copyDraft && (
               <View style={styles.copyDraftsContainer}>
                 <View style={styles.copyDraftsHeader}>
-                  <Copy size={14} color={colors.indigo[600]} strokeWidth={1.5} />
-                  <Text style={styles.copyDraftsLabel}>Ready-to-use draft</Text>
-                </View>
-                <View style={styles.draftItem}>
-                  <View style={styles.draftContent}>
-                    <Text style={styles.draftTypeLabel}>
-                      {copyDraft.draft_type === 'email' ? 'Email' : 'Text'}
-                    </Text>
-                    <Text style={styles.draftSubject}>{copyDraft.draft_title}</Text>
-                    <Text
-                      style={styles.draftBody}
-                      numberOfLines={isDraftExpanded ? undefined : 3}
-                    >
-                      {copyDraft.draft_content}
-                    </Text>
-                    {copyDraft.customization_tips && (
-                      <Text style={styles.draftTips}>
-                        Tip: {copyDraft.customization_tips}
-                      </Text>
-                    )}
-                    <TouchableOpacity
-                      style={styles.draftExpandToggle}
-                      onPress={() => setIsDraftExpanded(!isDraftExpanded)}
-                    >
-                      {isDraftExpanded ? (
-                        <ChevronUp size={14} color={colors.indigo[600]} strokeWidth={1.5} />
-                      ) : (
-                        <ChevronDown size={14} color={colors.indigo[600]} strokeWidth={1.5} />
-                      )}
-                      <Text style={styles.draftExpandText}>
-                        {isDraftExpanded ? 'Show less' : 'Show more'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                  <Text style={styles.copyDraftsLabel}>
+                    {copyDraft.draft_type === 'email' ? 'Draft Email' : 'Draft Text'}
+                  </Text>
                   <View style={styles.draftActions}>
                     <TouchableOpacity
-                      style={[
-                        styles.draftActionButton,
-                        isCopied && styles.draftActionButtonCopied
-                      ]}
-                      onPress={handleCopyDraft}>
-                      <Copy
-                        size={16}
-                        color={isCopied ? colors.success[600] : colors.indigo[600]}
-                        strokeWidth={1.5}
-                      />
-                      {isCopied && (
-                        <Text style={styles.copiedText}>Copied!</Text>
+                      ref={copyButtonRef}
+                      style={[styles.draftActionButton, copyHovered && !isCopied && styles.draftActionButtonHovered, isCopied && styles.draftActionButtonCopied]}
+                      onPress={handleCopyDraft}
+                      onMouseEnter={() => { setCopyHovered(true); if (!isCopied) setShowCopyTooltip(true); }}
+                      onMouseLeave={() => { setCopyHovered(false); if (!isCopied) setShowCopyTooltip(false); }}>
+                      {isCopied ? (
+                        <Check size={18} color={colors.success[600]} strokeWidth={1.5} />
+                      ) : (
+                        <Copy size={18} color={colors.gray.light[700]} strokeWidth={1.5} />
                       )}
                     </TouchableOpacity>
                     {copyDraft.draft_type === 'email' && (
                       <TouchableOpacity
-                        style={styles.draftActionButton}
-                        onPress={() => Linking.openURL(generateMailtoLink(copyDraft))}>
-                        <Mail size={16} color={colors.indigo[600]} strokeWidth={1.5} />
+                        ref={sendButtonRef}
+                        style={[styles.draftActionButton, sendHovered && styles.draftActionButtonHovered]}
+                        onPress={() => Linking.openURL(generateMailtoLink(copyDraft))}
+                        onMouseEnter={() => { setSendHovered(true); setShowSendTooltip(true); }}
+                        onMouseLeave={() => { setSendHovered(false); setShowSendTooltip(false); }}>
+                        <Send size={18} color={colors.gray.light[700]} strokeWidth={1.5} />
                       </TouchableOpacity>
                     )}
                   </View>
                 </View>
+                <View style={styles.draftDivider} />
+                <Text style={styles.draftSubject}>{copyDraft.draft_title}</Text>
+                <View style={styles.draftDivider} />
+                <div
+                  style={{
+                    color: colors.gray.light[800],
+                    fontSize: 16,
+                    fontFamily: 'Inter',
+                    fontWeight: 400,
+                    lineHeight: '22.4px',
+                    whiteSpace: 'pre-wrap',
+                    wordWrap: 'break-word',
+                  }}
+                  dangerouslySetInnerHTML={{__html: copyDraft.draft_content}}
+                />
               </View>
             )}
           </View>
@@ -497,7 +514,7 @@ export const Step: React.FC<StepProps> = ({
           position: 'fixed',
           left: splitTooltipPosition.x,
           top: splitTooltipPosition.y,
-          transform: 'translate(-50%, -100%)',
+          transform: 'translate(-50%, 4px)',
           zIndex: 10000,
           pointerEvents: 'none',
         }}>
@@ -513,7 +530,7 @@ export const Step: React.FC<StepProps> = ({
           position: 'fixed',
           left: rewriteTooltipPosition.x,
           top: rewriteTooltipPosition.y,
-          transform: 'translate(-50%, -100%)',
+          transform: 'translate(-50%, 4px)',
           zIndex: 10000,
           pointerEvents: 'none',
         }}>
@@ -529,7 +546,7 @@ export const Step: React.FC<StepProps> = ({
           position: 'fixed',
           left: addAfterTooltipPosition.x,
           top: addAfterTooltipPosition.y,
-          transform: 'translate(-50%, -100%)',
+          transform: 'translate(-50%, 4px)',
           zIndex: 10000,
           pointerEvents: 'none',
         }}>
@@ -545,12 +562,44 @@ export const Step: React.FC<StepProps> = ({
           position: 'fixed',
           left: noteTooltipPosition.x,
           top: noteTooltipPosition.y,
-          transform: 'translate(-50%, -100%)',
+          transform: 'translate(-50%, 4px)',
           zIndex: 10000,
           pointerEvents: 'none',
         }}>
           <View style={styles.tooltipPortal}>
             <Text style={styles.tooltipText}>{existingNote ? 'Edit note' : 'Add note'}</Text>
+          </View>
+        </div>,
+        document.body
+      )}
+
+      {showCopyTooltip && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: copyTooltipPosition.x,
+          top: copyTooltipPosition.y,
+          transform: 'translate(-50%, 4px)',
+          zIndex: 10000,
+          pointerEvents: 'none',
+        }}>
+          <View style={styles.tooltipPortal}>
+            <Text style={styles.tooltipText}>{isCopied ? 'Copied' : 'Copy'}</Text>
+          </View>
+        </div>,
+        document.body
+      )}
+
+      {showSendTooltip && typeof document !== 'undefined' && createPortal(
+        <div style={{
+          position: 'fixed',
+          left: sendTooltipPosition.x,
+          top: sendTooltipPosition.y,
+          transform: 'translate(-50%, 4px)',
+          zIndex: 10000,
+          pointerEvents: 'none',
+        }}>
+          <View style={styles.tooltipPortal}>
+            <Text style={styles.tooltipText}>Send</Text>
           </View>
         </div>,
         document.body
@@ -677,7 +726,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 5,
-    marginBottom: 8,
   },
   tooltipText: {
     color: 'white',
@@ -718,10 +766,10 @@ const styles = StyleSheet.create({
   metadataValue: {
     flex: 1,
     color: colors.gray.light[600],
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Inter',
     fontWeight: '400',
-    lineHeight: 19.6,
+    lineHeight: 22.4,
   },
   helpfulLinksText: {
     color: colors.gray.light[600],
@@ -813,115 +861,70 @@ const styles = StyleSheet.create({
   // Copy Drafts styles
   copyDraftsContainer: {
     marginTop: 4,
-    padding: 12,
-    backgroundColor: colors.indigo[50],
-    borderLeftWidth: 3,
-    borderLeftColor: colors.indigo[400],
-    borderRadius: 6,
+    paddingTop: 12,
+    paddingBottom: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.gray.light[200],
+    flexDirection: 'column',
+    gap: 16,
   },
   copyDraftsHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
   },
   copyDraftsLabel: {
-    color: colors.indigo[700],
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  draftItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.indigo[200],
-  },
-  draftContent: {
-    flex: 1,
-    marginRight: 12,
-  },
-  draftTypeLabel: {
-    color: colors.indigo[500],
-    fontSize: 11,
-    fontFamily: 'Inter',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    marginBottom: 4,
-  },
-  draftSubject: {
-    color: colors.indigo[900],
+    color: colors.gray.light[700],
     fontSize: 14,
     fontFamily: 'Inter',
-    fontWeight: '600',
-    lineHeight: 20,
-    marginBottom: 4,
+    fontWeight: '400',
+    lineHeight: 19.6,
+  },
+  draftDivider: {
+    alignSelf: 'stretch',
+    height: 1,
+    backgroundColor: colors.gray.dark[200],
+  },
+  draftSubject: {
+    color: 'black',
+    fontSize: 16,
+    fontFamily: 'Inter',
+    fontWeight: '500',
+    lineHeight: 22.4,
   },
   draftBody: {
-    color: colors.indigo[800],
-    fontSize: 13,
+    color: colors.gray.light[800],
+    fontSize: 16,
     fontFamily: 'Inter',
     fontWeight: '400',
-    lineHeight: 18,
+    lineHeight: 22.4,
     // @ts-ignore - web-specific styles
     whiteSpace: 'pre-wrap',
-  },
-  draftTips: {
-    color: colors.indigo[600],
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '400',
-    fontStyle: 'italic',
-    lineHeight: 16,
-    marginTop: 8,
   },
   draftActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
   draftActionButton: {
     width: 32,
     height: 32,
+    padding: 8,
+    borderRadius: 38,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 6,
-    backgroundColor: colors.indigo[100],
-    flexDirection: 'row',
-    gap: 4,
     // @ts-ignore - web-specific styles
     cursor: 'pointer',
     // @ts-ignore
-    transition: 'background-color 0.15s ease',
+    transition: 'background-color 0.2s ease-in, color 0.2s ease-in',
+  },
+  draftActionButtonHovered: {
+    backgroundColor: colors.gray.light[100],
   },
   draftActionButtonCopied: {
-    backgroundColor: colors.success[100],
-    width: 'auto',
-    paddingHorizontal: 8,
-  },
-  copiedText: {
-    color: colors.success[600],
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-  },
-  draftExpandToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
-    // @ts-ignore - web-specific styles
-    cursor: 'pointer',
-  },
-  draftExpandText: {
-    color: colors.indigo[600],
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '500',
+    backgroundColor: colors.success[50],
   },
 });
