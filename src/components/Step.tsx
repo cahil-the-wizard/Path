@@ -613,8 +613,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     overflow: 'hidden',
     flexDirection: 'column',
-    gap: 8,
-    paddingTop: 20,
+    gap: 20,
+    paddingBottom: 20,
   },
   container: {
     alignSelf: 'stretch',
@@ -773,17 +773,17 @@ const styles = StyleSheet.create({
   },
   helpfulLinksText: {
     color: colors.gray.light[600],
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Inter',
     fontWeight: '400',
-    lineHeight: 19.6,
+    lineHeight: 22.4,
   },
   helpfulLink: {
     color: colors.green[600],
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: 'Inter',
     fontWeight: '400',
-    lineHeight: 19.6,
+    lineHeight: 22.4,
     textDecorationLine: 'underline',
     // @ts-ignore - web-specific styles
     cursor: 'pointer',
