@@ -55,7 +55,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 const styles = StyleSheet.create({
   container: {
     alignSelf: 'stretch',
-    paddingVertical: 12,
+    height: 48,
     paddingHorizontal: 20,
     backgroundColor: '#fff',
     flexDirection: 'row',
@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   iconContainer: {
-    width: 18,
-    height: 18,
+    width: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
   },
