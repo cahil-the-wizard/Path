@@ -1,5 +1,6 @@
 import React, {useState, useRef, useEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Pressable} from 'react-native';
+import {createPortal} from 'react-dom';
 import {LucideIcon} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 
@@ -40,7 +41,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     ? styles.alignRight
     : styles.alignLeft;
 
-  return (
+  const content = (
     <>
       {/* Backdrop */}
       <Pressable
@@ -82,6 +83,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
       </View>
     </>
   );
+
+  // Use portal to render outside parent container (avoids clipping from transforms)
+  return createPortal(content, document.body);
 };
 
 const styles = StyleSheet.create({

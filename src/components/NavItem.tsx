@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import {TouchableOpacity, Text, StyleSheet, View, Animated} from 'react-native';
-import {LucideIcon, Trash2, CircleCheck} from 'lucide-react-native';
+import {LucideIcon, MoreHorizontal} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 
 interface NavItemProps {
@@ -8,8 +8,7 @@ interface NavItemProps {
   icon?: LucideIcon;
   active?: boolean;
   onPress?: () => void;
-  onDelete?: () => void;
-  onComplete?: () => void;
+  onMorePress?: (e: any) => void;
   collapsed?: boolean;
   textOpacity?: Animated.Value;
 }
@@ -19,25 +18,18 @@ export const NavItem: React.FC<NavItemProps> = ({
   icon: Icon,
   active = false,
   onPress,
-  onDelete,
-  onComplete,
+  onMorePress,
   collapsed = false,
   textOpacity,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isDeleteHovered, setIsDeleteHovered] = useState(false);
-  const [isCompleteHovered, setIsCompleteHovered] = useState(false);
+  const [isMoreHovered, setIsMoreHovered] = useState(false);
   const iconColor = active ? colors.green[600] : colors.gray.light[950];
   const textColor = active ? colors.green[600] : colors.gray.light[950];
 
-  const handleDeleteClick = (e: any) => {
+  const handleMoreClick = (e: any) => {
     e.stopPropagation();
-    onDelete?.();
-  };
-
-  const handleCompleteClick = (e: any) => {
-    e.stopPropagation();
-    onComplete?.();
+    onMorePress?.(e);
   };
 
   return (
@@ -75,33 +67,17 @@ export const NavItem: React.FC<NavItemProps> = ({
           {label}
         </Text>
       )}
-      {/* Action icons on hover */}
-      {!collapsed && (onComplete || onDelete) && isHovered && (
-        <View style={styles.actionButtons}>
-          {onComplete && (
-            <TouchableOpacity
-              style={[styles.actionButton, isCompleteHovered && styles.actionButtonHovered]}
-              onPress={handleCompleteClick}
-              onMouseEnter={() => setIsCompleteHovered(true)}
-              onMouseLeave={() => setIsCompleteHovered(false)}
-              // @ts-ignore - web-specific attribute for tooltip
-              title="Mark complete"
-            >
-              <CircleCheck size={14} color={isCompleteHovered ? colors.green[600] : colors.gray.light[400]} strokeWidth={1.5} />
-            </TouchableOpacity>
-          )}
-          {onDelete && (
-            <TouchableOpacity
-              style={[styles.actionButton, isDeleteHovered && styles.actionButtonHovered]}
-              onPress={handleDeleteClick}
-              onMouseEnter={() => setIsDeleteHovered(true)}
-              onMouseLeave={() => setIsDeleteHovered(false)}
-              // @ts-ignore - web-specific attribute for tooltip
-              title="Delete"
-            >
-              <Trash2 size={14} color={isDeleteHovered ? colors.gray.light[700] : colors.gray.light[400]} strokeWidth={1.5} />
-            </TouchableOpacity>
-          )}
+      {/* More options button - absolutely positioned over text on hover */}
+      {!collapsed && onMorePress && isHovered && (
+        <View style={[styles.actionButtons, {backgroundColor: active ? colors.green[100] : colors.gray.light[200]}]}>
+          <TouchableOpacity
+            style={[styles.actionButton, isMoreHovered && styles.actionButtonHovered]}
+            onPress={handleMoreClick}
+            onMouseEnter={() => setIsMoreHovered(true)}
+            onMouseLeave={() => setIsMoreHovered(false)}
+          >
+            <MoreHorizontal size={14} color={isMoreHovered ? colors.gray.light[700] : colors.gray.light[400]} strokeWidth={1.5} />
+          </TouchableOpacity>
         </View>
       )}
     </TouchableOpacity>
@@ -110,6 +86,7 @@ export const NavItem: React.FC<NavItemProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    position: 'relative',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 38,
@@ -147,10 +124,14 @@ const styles = StyleSheet.create({
     lineHeight: typography.body.small.lineHeight,
   },
   actionButtons: {
+    position: 'absolute',
+    right: 4,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    marginLeft: 4,
+    paddingLeft: 16,
   },
   actionButton: {
     width: 24,
