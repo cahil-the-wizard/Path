@@ -1,5 +1,6 @@
 import React, {createContext, useContext, useState, useCallback, useEffect, ReactNode} from 'react';
 import {authService, AuthSession, SignInCredentials, SignUpCredentials, SignUpResult} from '../services/auth';
+import {analytics} from '../services/analytics';
 
 interface UserData {
   name: string;
@@ -36,6 +37,9 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
           setSession(restoredSession);
           setIsAuthenticated(true);
           setUserData(authService.getUserData());
+          // Identify user in analytics
+          const data = authService.getUserData();
+          analytics.identify(restoredSession.userId, {email: data.email, name: data.name});
         }
       } catch (error) {
         console.error('Failed to restore session:', error);
@@ -55,6 +59,10 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
     const data = authService.getUserData();
     setUserData(data);
 
+    // Identify user in analytics
+    analytics.identify(newSession.userId, {email: data.email, name: data.name});
+    analytics.track('user_signed_in');
+
     return newSession;
   }, []);
 
@@ -69,12 +77,18 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
       // Update user data
       const data = authService.getUserData();
       setUserData(data);
+
+      // Identify user in analytics
+      analytics.identify(result.session.userId, {email: data.email, name: data.name});
+      analytics.track('user_signed_up');
     }
 
     return result;
   }, []);
 
   const signOut = useCallback(async () => {
+    analytics.track('user_signed_out');
+    analytics.reset();
     await authService.signOut();
     setSession(null);
     setIsAuthenticated(false);
