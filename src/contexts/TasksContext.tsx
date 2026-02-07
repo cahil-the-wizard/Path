@@ -9,12 +9,12 @@ interface TasksContextValue {
   tasks: Task[];
   tasksSummary: TaskSummary[];
   isLoading: boolean;
-  currentPage: number;
-  totalPages: number;
+  isLoadingMore: boolean;
+  hasMoreTasks: boolean;
   totalTasks: number;
-  refreshTasks: (page?: number) => Promise<void>;
+  refreshTasks: () => Promise<void>;
+  loadMoreTasks: () => Promise<void>;
   refreshTasksSummary: () => Promise<void>;
-  setCurrentPage: (page: number) => void;
 }
 
 const TasksContext = createContext<TasksContextValue | undefined>(undefined);
@@ -24,19 +24,16 @@ export const TasksProvider: React.FC<{children: ReactNode}> = ({children}) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [tasksSummary, setTasksSummary] = useState<TaskSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [totalTasks, setTotalTasks] = useState(0);
 
-  const totalPages = Math.ceil(totalTasks / TASKS_PER_PAGE);
+  const hasMoreTasks = tasks.length < totalTasks;
 
-  const refreshTasks = useCallback(async (page?: number) => {
+  const refreshTasks = useCallback(async () => {
     if (!session?.userId) {
       console.warn('No user session available, skipping task refresh');
       return;
     }
-
-    const pageToFetch = page ?? currentPage;
-    const offset = (pageToFetch - 1) * TASKS_PER_PAGE;
 
     try {
       setIsLoading(true);
@@ -44,7 +41,7 @@ export const TasksProvider: React.FC<{children: ReactNode}> = ({children}) => {
         user_id: session.userId,
         status: 'active',
         limit: TASKS_PER_PAGE,
-        offset
+        offset: 0
       });
       // Sort by most recent first
       const sortedTasks = response.tasks.sort((a, b) =>
@@ -52,15 +49,38 @@ export const TasksProvider: React.FC<{children: ReactNode}> = ({children}) => {
       );
       setTasks(sortedTasks);
       setTotalTasks(response.total || 0);
-      if (page !== undefined) {
-        setCurrentPage(page);
-      }
     } catch (error) {
       console.error('Failed to refresh tasks:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [session?.userId, currentPage]);
+  }, [session?.userId]);
+
+  const loadMoreTasks = useCallback(async () => {
+    if (!session?.userId || isLoadingMore || !hasMoreTasks) {
+      return;
+    }
+
+    try {
+      setIsLoadingMore(true);
+      const response = await apiClient.getTasks({
+        user_id: session.userId,
+        status: 'active',
+        limit: TASKS_PER_PAGE,
+        offset: tasks.length
+      });
+      // Sort new tasks by most recent first
+      const sortedNewTasks = response.tasks.sort((a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setTasks(prev => [...prev, ...sortedNewTasks]);
+      setTotalTasks(response.total || 0);
+    } catch (error) {
+      console.error('Failed to load more tasks:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [session?.userId, isLoadingMore, hasMoreTasks, tasks.length]);
 
   const refreshTasksSummary = useCallback(async () => {
     if (!session?.userId) {
@@ -79,23 +99,18 @@ export const TasksProvider: React.FC<{children: ReactNode}> = ({children}) => {
     }
   }, [session?.userId]);
 
-  const handleSetCurrentPage = useCallback((page: number) => {
-    setCurrentPage(page);
-    refreshTasks(page);
-  }, [refreshTasks]);
-
   return (
     <TasksContext.Provider
       value={{
         tasks,
         tasksSummary,
         isLoading,
-        currentPage,
-        totalPages,
+        isLoadingMore,
+        hasMoreTasks,
         totalTasks,
         refreshTasks,
+        loadMoreTasks,
         refreshTasksSummary,
-        setCurrentPage: handleSetCurrentPage,
       }}>
       {children}
     </TasksContext.Provider>

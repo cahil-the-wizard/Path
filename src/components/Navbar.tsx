@@ -19,11 +19,14 @@ import {
   LogOut,
   Settings as SettingsIcon,
   Sparkles,
-  ChevronLeft,
-  ChevronRight,
+  Copy,
+  Edit,
+  Trash2,
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
 import {ConfirmationModal} from './ConfirmationModal';
+import {Dropdown, DropdownItem} from './Dropdown';
+import {RewriteTaskModal} from './RewriteTaskModal';
 import {colors, typography} from '../theme/tokens';
 import {useAuth} from '../contexts/AuthContext';
 import {useNavigate, useLocation} from 'react-router-dom';
@@ -72,11 +75,18 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
   const [hoveredOnLogo, setHoveredOnLogo] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState<{id: string; title: string} | null>(null);
+  const [selectedTask, setSelectedTask] = useState<{id: string; title: string} | null>(null);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({x: 0, y: 0});
+  const [showRewriteTaskModal, setShowRewriteTaskModal] = useState(false);
   const widthAnim = useRef(new Animated.Value(240)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
+  const scrollContainerHeight = useRef(0);
+  const scrollContentHeight = useRef(0);
+  const [hasOverflow, setHasOverflow] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const {tasks, isLoading: loadingTasks, refreshTasks, currentPage: tasksPage, totalPages, setCurrentPage} = useTasks();
+  const {tasks, isLoading: loadingTasks, isLoadingMore, hasMoreTasks, refreshTasks, loadMoreTasks} = useTasks();
   const {signOut, userData} = useAuth();
 
   // Get user's name and first initial for avatar
@@ -116,17 +126,81 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
       refreshTasks();
     } catch (error) {
       Alert.alert('Error', 'Failed to delete task');
+    } finally {
+      setTaskToDelete(null);
     }
   };
 
-  const handleCompleteTask = async (taskId: string) => {
+  const handleMorePress = (e: any, task: {id: string; title: string}) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDropdownPosition({
+      x: rect.left,
+      y: rect.bottom + 4,
+    });
+    setSelectedTask(task);
+    setShowDropdown(true);
+  };
+
+  const handleDuplicate = async () => {
+    if (!selectedTask) return;
     try {
-      await apiClient.updateTask(taskId, {status: 'completed'});
-      refreshTasks();
+      setShowDropdown(false);
+      const response = await apiClient.duplicateTask(selectedTask.id);
+      const queueStatus = await apiClient.pollQueueStatus(response.queue_id);
+
+      if (queueStatus.result?.task_id) {
+        await refreshTasks();
+        const slug = generateTaskSlug(selectedTask.title + ' (copy)', queueStatus.result.task_id);
+        navigate(`/task/${slug}`);
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to complete task');
+      Alert.alert('Error', 'Failed to duplicate task');
     }
   };
+
+  const handleRewriteTaskClick = () => {
+    setShowDropdown(false);
+    setShowRewriteTaskModal(true);
+  };
+
+  const handleRewriteTask = async (prompt: string) => {
+    if (!selectedTask) return;
+    try {
+      setShowRewriteTaskModal(false);
+      const response = await apiClient.rewriteTask({
+        task_id: selectedTask.id,
+        prompt,
+      });
+      await apiClient.pollQueueStatus(response.queue_id);
+      await refreshTasks();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to rewrite task');
+    }
+  };
+
+  const dropdownItems: DropdownItem[] = [
+    {
+      label: 'Duplicate',
+      icon: Copy,
+      onPress: handleDuplicate,
+    },
+    {
+      label: 'Rewrite Task',
+      icon: Edit,
+      onPress: handleRewriteTaskClick,
+    },
+    {
+      label: 'Delete',
+      icon: Trash2,
+      onPress: () => {
+        setShowDropdown(false);
+        if (selectedTask) {
+          setTaskToDelete(selectedTask);
+        }
+      },
+      variant: 'destructive',
+    },
+  ];
 
   const toggleCollapse = () => {
     const toValue = collapsed ? 240 : 60;
@@ -262,7 +336,31 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
               <View style={styles.tasksSectionHeader}>
                 <Text style={styles.tasksSectionTitle}>Active</Text>
               </View>
-              <ScrollView style={styles.tasksList}>
+              <ScrollView
+                style={styles.tasksList}
+                onScroll={(e) => {
+                  const {layoutMeasurement, contentOffset, contentSize} = e.nativeEvent;
+                  const isNearBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+                  if (isNearBottom && hasMoreTasks && !isLoadingMore) {
+                    loadMoreTasks();
+                  }
+                }}
+                onLayout={(e) => {
+                  scrollContainerHeight.current = e.nativeEvent.layout.height;
+                  // Check overflow when container size changes
+                  setHasOverflow(scrollContentHeight.current > scrollContainerHeight.current);
+                }}
+                onContentSizeChange={(contentWidth, contentHeight) => {
+                  scrollContentHeight.current = contentHeight;
+                  // Check overflow when content size changes
+                  setHasOverflow(contentHeight > scrollContainerHeight.current);
+                  // Auto-load more if content doesn't fill the container
+                  if (scrollContainerHeight.current > 0 && contentHeight < scrollContainerHeight.current && hasMoreTasks && !isLoadingMore && !loadingTasks) {
+                    loadMoreTasks();
+                  }
+                }}
+                scrollEventThrottle={400}
+              >
                 {loadingTasks ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="small" color={colors.green[600]} />
@@ -272,48 +370,37 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
                     <Text style={styles.emptyText}>No tasks yet</Text>
                   </View>
                 ) : (
-                  tasks.map(task => (
-                    <NavItem
-                      key={task.id}
-                      label={task.title}
-                      collapsed={collapsed}
-                      active={currentTaskIdPrefix !== null && task.id.startsWith(currentTaskIdPrefix)}
-                      onPress={() => navigate(`/task/${generateTaskSlug(task.title, task.id)}`)}
-                      onComplete={() => handleCompleteTask(task.id)}
-                      onDelete={() => setTaskToDelete({id: task.id, title: task.title})}
-                      textOpacity={opacityAnim}
-                    />
-                  ))
+                  <>
+                    {tasks.map(task => (
+                      <NavItem
+                        key={task.id}
+                        label={task.title}
+                        collapsed={collapsed}
+                        active={currentTaskIdPrefix !== null && task.id.startsWith(currentTaskIdPrefix)}
+                        onPress={() => navigate(`/task/${generateTaskSlug(task.title, task.id)}`)}
+                        onMorePress={(e) => handleMorePress(e, {id: task.id, title: task.title})}
+                        textOpacity={opacityAnim}
+                      />
+                    ))}
+                    {isLoadingMore && (
+                      <View style={styles.loadingMoreContainer}>
+                        <ActivityIndicator size="small" color={colors.green[600]} />
+                      </View>
+                    )}
+                  </>
                 )}
               </ScrollView>
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <Animated.View style={[styles.pagination, {opacity: opacityAnim}]}>
-                  <TouchableOpacity
-                    style={[styles.paginationButton, tasksPage === 1 && styles.paginationButtonDisabled]}
-                    onPress={() => tasksPage > 1 && setCurrentPage(tasksPage - 1)}
-                    disabled={tasksPage === 1}
-                  >
-                    <ChevronLeft size={16} color={tasksPage === 1 ? colors.gray.light[300] : colors.gray.light[600]} strokeWidth={1.5} />
-                  </TouchableOpacity>
-                  <Text style={styles.paginationText}>
-                    {tasksPage} / {totalPages}
-                  </Text>
-                  <TouchableOpacity
-                    style={[styles.paginationButton, tasksPage === totalPages && styles.paginationButtonDisabled]}
-                    onPress={() => tasksPage < totalPages && setCurrentPage(tasksPage + 1)}
-                    disabled={tasksPage === totalPages}
-                  >
-                    <ChevronRight size={16} color={tasksPage === totalPages ? colors.gray.light[300] : colors.gray.light[600]} strokeWidth={1.5} />
-                  </TouchableOpacity>
-                </Animated.View>
-              )}
             </View>
           )}
         </Animated.View>
 
         {/* Spacer for collapsed state */}
         {collapsed && <View style={{flex: 1}} />}
+
+        {/* Divider above profile when tasks list has overflow */}
+        {!collapsed && hasOverflow && (
+          <View style={styles.profileDivider} />
+        )}
 
         {/* User Profile */}
         <View style={styles.profileContainer}>
@@ -360,6 +447,22 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
           )}
         </View>
 
+        {/* Task Dropdown */}
+        <Dropdown
+          items={dropdownItems}
+          visible={showDropdown}
+          onClose={() => setShowDropdown(false)}
+          position={dropdownPosition}
+        />
+
+        {/* Rewrite Task Modal */}
+        <RewriteTaskModal
+          visible={showRewriteTaskModal}
+          taskTitle={selectedTask?.title || ''}
+          onConfirm={handleRewriteTask}
+          onCancel={() => setShowRewriteTaskModal(false)}
+        />
+
         {/* Delete Task Confirmation Modal */}
         <ConfirmationModal
           visible={taskToDelete !== null}
@@ -389,7 +492,6 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     paddingBottom: 20,
     flexDirection: 'column',
-    justifyContent: 'space-between',
   },
   innerContainerCollapsed: {
     justifyContent: 'space-between',
@@ -487,7 +589,7 @@ const styles = StyleSheet.create({
   },
   dividerContainer: {
     paddingHorizontal: 8,
-    marginVertical: 10,
+    marginVertical: 16,
   },
   divider: {
     height: 1,
@@ -509,6 +611,12 @@ const styles = StyleSheet.create({
   },
   tasksList: {
     flex: 1,
+  },
+  profileDivider: {
+    height: 1,
+    backgroundColor: colors.gray.light[300],
+    marginHorizontal: 8,
+    marginBottom: 8,
   },
   profileContainer: {
     position: 'relative',
@@ -596,6 +704,10 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
+  loadingMoreContainer: {
+    padding: 12,
+    alignItems: 'center',
+  },
   emptyContainer: {
     padding: 20,
     alignItems: 'center',
@@ -604,36 +716,5 @@ const styles = StyleSheet.create({
     fontSize: typography.body.small.fontSize,
     fontFamily: typography.body.small.fontFamily,
     color: colors.gray.light[500],
-  },
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderTopWidth: 1,
-    borderTopColor: colors.gray.light[200],
-  },
-  paginationButton: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 6,
-    backgroundColor: colors.gray.light[100],
-    // @ts-ignore - web-specific styles
-    cursor: 'pointer',
-  },
-  paginationButtonDisabled: {
-    backgroundColor: 'transparent',
-    // @ts-ignore
-    cursor: 'default',
-  },
-  paginationText: {
-    fontSize: 12,
-    fontFamily: 'Inter',
-    fontWeight: '500',
-    color: colors.gray.light[600],
   },
 });
