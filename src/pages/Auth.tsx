@@ -8,6 +8,7 @@ import {LogIn} from 'lucide-react-native';
 import {colors, typography} from '../theme/tokens';
 import {useAuth} from '../contexts/AuthContext';
 import {useNavigate, useLocation} from 'react-router-dom';
+import {analytics} from '../services/analytics';
 
 const REMEMBERED_EMAIL_KEY = 'remembered_email';
 
@@ -87,14 +88,21 @@ export const Auth: React.FC = () => {
 
   const handleAuth = async () => {
     if (!email.trim() || !password.trim()) {
+      analytics.track(mode === 'signup' ? 'signup_validation_failed' : 'signin_validation_failed', {
+        reason: 'missing_required_fields',
+      });
       Alert.alert('Error', 'Please fill in all required fields');
       return;
     }
 
     if (mode === 'signup' && !name.trim()) {
+      analytics.track('signup_validation_failed', {reason: 'missing_name'});
       Alert.alert('Error', 'Please enter your name');
       return;
     }
+
+    // Track attempt
+    analytics.track(mode === 'signup' ? 'signup_attempted' : 'signin_attempted');
 
     // Remember email for future visits
     try {
@@ -113,6 +121,7 @@ export const Auth: React.FC = () => {
         // Check if account already exists
         if (result.accountAlreadyExists) {
           console.log('Account already exists - showing toast');
+          analytics.track('signup_account_exists');
           setShowAccountExistsToast(true);
           setIsLoading(false);
           return;
@@ -120,6 +129,7 @@ export const Auth: React.FC = () => {
 
         // Check if email confirmation is required
         if (result.requiresEmailConfirmation) {
+          analytics.track('signup_email_confirmation_required');
           setConfirmationEmail(result.email);
           setShowEmailConfirmation(true);
           setIsLoading(false);
@@ -127,6 +137,7 @@ export const Auth: React.FC = () => {
         }
 
         // Save user profile data
+        analytics.track('signup_succeeded');
         updateUserData({
           name: name.trim(),
           email: email.trim(),
@@ -142,6 +153,7 @@ export const Auth: React.FC = () => {
           email: email.trim(),
           password: password.trim(),
         });
+        analytics.track('signin_succeeded');
         console.log('Signed in successfully, session:', session.userId);
         // Clear remembered email after successful login
         try {
@@ -159,13 +171,16 @@ export const Auth: React.FC = () => {
       const errorCode = (error as any)?.code;
 
       if (mode === 'signup') {
+        analytics.track('signup_failed', {error: errorMessage});
         setErrorToastMessage(errorMessage);
         setShowErrorToast(true);
       } else if (errorCode === 'email_not_confirmed') {
+        analytics.track('signin_email_not_confirmed');
         // Show email confirmation screen for unverified accounts
         setConfirmationEmail(email.trim());
         setShowEmailConfirmation(true);
       } else {
+        analytics.track('signin_failed', {error: errorMessage, error_code: errorCode});
         Alert.alert('Error', errorMessage);
       }
     } finally {
