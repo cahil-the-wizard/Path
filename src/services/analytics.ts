@@ -1,33 +1,30 @@
 import posthog from 'posthog-js';
 import {ANALYTICS_CONFIG} from '../config/analytics';
 
+// Initialize PostHog immediately on module load
+if (typeof window !== 'undefined') {
+  posthog.init(ANALYTICS_CONFIG.posthog.apiKey, {
+    api_host: ANALYTICS_CONFIG.posthog.host,
+    person_profiles: 'identified_only',
+    capture_pageview: true,
+    capture_pageleave: true,
+  });
+  console.log('PostHog analytics initialized');
+}
+
 class AnalyticsService {
-  private initialized = false;
-
   /**
-   * Initialize PostHog analytics
+   * Check if running in browser
    */
-  init(): void {
-    if (this.initialized || typeof window === 'undefined') {
-      return;
-    }
-
-    posthog.init(ANALYTICS_CONFIG.posthog.apiKey, {
-      api_host: ANALYTICS_CONFIG.posthog.host,
-      person_profiles: 'identified_only',
-      capture_pageview: true,
-      capture_pageleave: true,
-    });
-
-    this.initialized = true;
-    console.log('Analytics initialized');
+  private get isEnabled(): boolean {
+    return typeof window !== 'undefined';
   }
 
   /**
    * Identify a user (call after login/signup)
    */
   identify(userId: string, properties?: Record<string, any>): void {
-    if (!this.initialized) return;
+    if (!this.isEnabled) return;
     posthog.identify(userId, properties);
   }
 
@@ -35,7 +32,7 @@ class AnalyticsService {
    * Reset user identity (call on logout)
    */
   reset(): void {
-    if (!this.initialized) return;
+    if (!this.isEnabled) return;
     posthog.reset();
   }
 
@@ -43,7 +40,7 @@ class AnalyticsService {
    * Track a custom event
    */
   track(eventName: string, properties?: Record<string, any>): void {
-    if (!this.initialized) return;
+    if (!this.isEnabled) return;
     posthog.capture(eventName, properties);
   }
 
@@ -51,7 +48,7 @@ class AnalyticsService {
    * Track a page view
    */
   pageView(pageName?: string): void {
-    if (!this.initialized) return;
+    if (!this.isEnabled) return;
     posthog.capture('$pageview', pageName ? {page: pageName} : undefined);
   }
 }
