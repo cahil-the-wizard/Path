@@ -2,6 +2,7 @@ import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {View, Text, StyleSheet, ActivityIndicator, Pressable, TouchableOpacity, Linking, TextInput} from 'react-native';
 import {createPortal} from 'react-dom';
 import {Check, Circle, BetweenHorizontalStart, Clock, CheckCircle2, RefreshCw, Plus, Edit3, ExternalLink, BookOpen, StickyNote, Copy, Send, ChevronDown, ChevronUp} from 'lucide-react-native';
+import {marked} from 'marked';
 import {Button} from './Button';
 import {Tooltip} from './Tooltip';
 import {colors, typography} from '../theme/tokens';
@@ -384,18 +385,50 @@ export const Step: React.FC<StepProps> = ({
                 <View style={styles.draftDivider} />
                 <Text style={styles.draftSubject}>{copyDraft.draft_title}</Text>
                 <View style={styles.draftDivider} />
-                <div
-                  style={{
-                    color: colors.gray.light[800],
-                    fontSize: 16,
-                    fontFamily: 'Inter',
-                    fontWeight: 400,
-                    lineHeight: '22.4px',
-                    whiteSpace: 'pre-wrap',
-                    wordWrap: 'break-word',
-                  }}
-                  dangerouslySetInnerHTML={{__html: copyDraft.draft_content}}
-                />
+                <View style={{position: 'relative'}}>
+                  <div
+                    className="draft-content"
+                    style={{
+                      color: colors.gray.light[800],
+                      fontSize: 16,
+                      fontFamily: 'Inter',
+                      fontWeight: 400,
+                      lineHeight: '22.4px',
+                      maxHeight: isDraftExpanded ? 2000 : 264,
+                      overflow: 'hidden',
+                      transition: 'max-height 0.6s ease-in-out',
+                    }}
+                    dangerouslySetInnerHTML={{__html: marked.parse(copyDraft.draft_content) as string}}
+                  />
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      height: 80,
+                      background: 'linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%)',
+                      pointerEvents: 'none',
+                      opacity: isDraftExpanded ? 0 : 1,
+                      transition: 'opacity 0.6s ease-in-out',
+                    }}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={styles.expandButton}
+                  onPress={() => setIsDraftExpanded(!isDraftExpanded)}>
+                  {isDraftExpanded ? (
+                    <>
+                      <Text style={styles.expandButtonText}>Show less</Text>
+                      <ChevronUp size={16} color={colors.gray.light[600]} strokeWidth={1.5} />
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.expandButtonText}>Show more</Text>
+                      <ChevronDown size={16} color={colors.gray.light[600]} strokeWidth={1.5} />
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             )}
           </View>
@@ -926,5 +959,21 @@ const styles = StyleSheet.create({
   },
   draftActionButtonCopied: {
     backgroundColor: colors.success[50],
+  },
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    marginTop: 8,
+    // @ts-ignore - web-specific styles
+    cursor: 'pointer',
+  },
+  expandButtonText: {
+    color: colors.gray.light[600],
+    fontSize: 14,
+    fontFamily: 'Inter',
+    fontWeight: '500',
   },
 });
