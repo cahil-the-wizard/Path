@@ -8,6 +8,14 @@ if (typeof window !== 'undefined') {
     person_profiles: 'identified_only',
     capture_pageview: true,
     capture_pageleave: true,
+    // Session recordings
+    disable_session_recording: false,
+    session_recording: {
+      maskAllInputs: false,
+      maskInputOptions: {
+        password: true,
+      },
+    },
   });
   console.log('PostHog analytics initialized');
 }
