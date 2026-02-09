@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React from 'react';
 import {SafeAreaView, StatusBar, StyleSheet, View, ActivityIndicator} from 'react-native';
 import {BrowserRouter, Routes, Route, useNavigate, useLocation, Navigate} from 'react-router-dom';
 import {Navbar} from './src/components/Navbar';
@@ -11,7 +11,8 @@ import {Settings} from './src/pages/Settings';
 import {colors} from './src/theme/tokens';
 import {TasksProvider} from './src/contexts/TasksContext';
 import {AuthProvider, useAuth} from './src/contexts/AuthContext';
-import {analytics} from './src/services/analytics';
+// Import analytics to initialize PostHog on app load
+import './src/services/analytics';
 
 type Page = 'today' | 'newTask' | 'tasksList' | 'taskDetail' | 'settings';
 
@@ -132,10 +133,6 @@ function AppContent(): React.JSX.Element {
 }
 
 function App(): React.JSX.Element {
-  useEffect(() => {
-    analytics.init();
-  }, []);
-
   return (
     <BrowserRouter>
       <AuthProvider>
