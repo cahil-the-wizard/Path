@@ -264,25 +264,6 @@ export const Auth: React.FC = () => {
 
             {/* Form */}
             <View style={styles.form}>
-              {/* Google Sign Up Button */}
-              <TouchableOpacity style={styles.googleButton}>
-                <Image
-                  source={{uri: '/assets/google-icon.png'}}
-                  style={styles.googleIcon}
-                  resizeMode="contain"
-                />
-                <Text style={styles.googleButtonText}>
-                  {mode === 'signup' ? 'Sign up with Google' : 'Sign in with Google'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Divider */}
-              <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>or</Text>
-                <View style={styles.dividerLine} />
-              </View>
-
               {/* Name Input - only for signup */}
               {mode === 'signup' && (
                 <TextInput
@@ -498,44 +479,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 20,
-  },
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 38,
-    borderWidth: 1,
-    borderColor: colors.gray.light[300],
-    backgroundColor: 'white',
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
-  },
-  googleButtonText: {
-    fontSize: typography.body.base.fontSize,
-    fontFamily: typography.body.base.fontFamily,
-    color: colors.gray.light[950],
-    lineHeight: typography.body.base.lineHeight,
-  },
-  divider: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.gray.light[300],
-  },
-  dividerText: {
-    fontSize: typography.body.small.fontSize,
-    fontFamily: typography.body.small.fontFamily,
-    color: colors.gray.light[600],
-    lineHeight: typography.body.small.lineHeight,
   },
   signUpButton: {
     backgroundColor: colors.green[500],
