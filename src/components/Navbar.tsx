@@ -22,6 +22,7 @@ import {
   Copy,
   Edit,
   Trash2,
+  MessageSquare,
 } from 'lucide-react-native';
 import {NavItem} from './NavItem';
 import {ConfirmationModal} from './ConfirmationModal';
@@ -429,6 +430,23 @@ export const Navbar: React.FC<NavbarProps> = ({onNavigate, currentPage}) => {
           {/* Profile Menu Popover */}
           {showProfileMenu && (
             <View style={[styles.profileMenu, collapsed && styles.profileMenuCollapsed]}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => {
+                  setShowProfileMenu(false);
+                  const subject = encodeURIComponent('Path Feedback');
+                  const body = encodeURIComponent(`Hi Path Team,
+
+I wanted to share some feedback:
+
+[Your feedback here]
+
+Thanks!`);
+                  window.location.href = `mailto:feedback@totallywizard.dev?subject=${subject}&body=${body}`;
+                }}>
+                <MessageSquare size={16} color={colors.gray.light[700]} strokeWidth={1.5} />
+                <Text style={styles.menuItemText}>Submit feedback</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.menuItem}
                 onPress={() => {
