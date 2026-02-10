@@ -5,6 +5,8 @@ export interface AuthSession {
   sessionToken: string;
   userId: string;
   expiresAt: string;
+  refreshToken?: string;
+  expiresIn?: number;
 }
 
 export interface SignUpResult {
@@ -98,6 +100,8 @@ class AuthService {
         sessionToken: data.session.access_token,
         userId: data.session.user.id,
         expiresAt: new Date(data.session.expires_at * 1000).toISOString(),
+        refreshToken: data.session.refresh_token,
+        expiresIn: data.session.expires_in,
       };
 
       this.setSession(session);
@@ -157,6 +161,8 @@ class AuthService {
       sessionToken: authData.access_token,
       userId: authData.user.id,
       expiresAt: new Date(authData.expires_at * 1000).toISOString(),
+      refreshToken: authData.refresh_token,
+      expiresIn: authData.expires_in,
     };
 
     this.setSession(session);
@@ -209,6 +215,47 @@ class AuthService {
     if (typeof localStorage !== 'undefined') {
       localStorage.removeItem('auth_session');
     }
+  }
+
+  /**
+   * Refreshes the session using the stored refresh token.
+   * Supabase rotates refresh tokens on each use, so we store the new one.
+   */
+  async refreshSession(): Promise<AuthSession> {
+    const currentRefreshToken = this.currentSession?.refreshToken;
+    if (!currentRefreshToken) {
+      throw new Error('No refresh token available');
+    }
+
+    const response = await fetch(`${this.supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': API_CONFIG.anonKey,
+      },
+      body: JSON.stringify({
+        refresh_token: currentRefreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error_description || error.msg || 'Token refresh failed');
+    }
+
+    const authData: SupabaseAuthResponse = await response.json();
+
+    const session: AuthSession = {
+      sessionToken: authData.access_token!,
+      userId: authData.user!.id,
+      expiresAt: new Date(authData.expires_at! * 1000).toISOString(),
+      refreshToken: authData.refresh_token,
+      expiresIn: authData.expires_in,
+    };
+
+    this.setSession(session);
+    console.log('Session refreshed successfully');
+    return session;
   }
 
   /**
