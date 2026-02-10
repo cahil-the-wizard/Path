@@ -27,14 +27,34 @@ import type {
   UpdatePreferencesRequest,
 } from '../types/backend';
 
+export interface ApiErrorResponse {
+  error: string;
+  error_code?: 'TOKEN_EXPIRED' | 'TOKEN_INVALID' | 'TOKEN_MISSING' | 'UNAUTHORIZED';
+  message?: string;
+}
+
+type UnauthorizedCallback = () => void;
+type RefreshTokenCallback = () => Promise<string>;
+
 class ApiClient {
   private baseUrl: string;
   private anonKey: string;
   private sessionToken: string | null = null;
+  private unauthorizedCallback: UnauthorizedCallback | null = null;
+  private refreshTokenCallback: RefreshTokenCallback | null = null;
+  private refreshPromise: Promise<string> | null = null;
 
   constructor() {
     this.baseUrl = API_CONFIG.baseUrl;
     this.anonKey = API_CONFIG.anonKey;
+  }
+
+  onUnauthorized(cb: UnauthorizedCallback): void {
+    this.unauthorizedCallback = cb;
+  }
+
+  onRefreshToken(cb: RefreshTokenCallback): void {
+    this.refreshTokenCallback = cb;
   }
 
   setSessionToken(token: string) {
@@ -62,9 +82,27 @@ class ApiClient {
     return headers;
   }
 
+  private async attemptRefresh(): Promise<string> {
+    // Deduplicate: if a refresh is already in flight, reuse it
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    if (!this.refreshTokenCallback) {
+      throw new Error('No refresh token callback registered');
+    }
+
+    this.refreshPromise = this.refreshTokenCallback().finally(() => {
+      this.refreshPromise = null;
+    });
+
+    return this.refreshPromise;
+  }
+
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    isRetry = false
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
@@ -90,12 +128,35 @@ class ApiClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      let error;
+      let error: ApiErrorResponse;
       try {
         error = JSON.parse(errorText);
       } catch {
         error = { error: errorText || 'An unknown error occurred' };
       }
+
+      // Handle 401 responses
+      if (response.status === 401) {
+        const errorCode = error.error_code;
+
+        // TOKEN_EXPIRED: attempt refresh + retry (once)
+        if (errorCode === 'TOKEN_EXPIRED' && !isRetry && this.refreshTokenCallback) {
+          try {
+            const newToken = await this.attemptRefresh();
+            this.setSessionToken(newToken);
+            return this.request<T>(endpoint, options, true);
+          } catch {
+            // Refresh failed — fall through to sign out
+            this.unauthorizedCallback?.();
+            throw new Error(error.error || error.message || 'Session expired');
+          }
+        }
+
+        // TOKEN_INVALID, TOKEN_MISSING, UNAUTHORIZED, or retry already failed
+        this.unauthorizedCallback?.();
+        throw new Error(error.error || error.message || 'Unauthorized');
+      }
+
       console.error('API Error:', {
         status: response.status,
         error,
@@ -105,6 +166,10 @@ class ApiClient {
     }
 
     return response.json();
+  }
+
+  async checkSession(): Promise<{valid: boolean; expires_in?: number}> {
+    return this.request<{valid: boolean; expires_in?: number}>(API_ENDPOINTS.checkSession);
   }
 
   // Task operations

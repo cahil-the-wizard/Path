@@ -19,4 +19,5 @@ export const API_ENDPOINTS = {
   getTasksSummary: '/get-tasks-summary',
   updateStepNote: (stepId: string) => `/update-step-note/${stepId}`,
   updatePreferences: '/update-preferences',
+  checkSession: '/check-session',
 } as const;

@@ -1,5 +1,6 @@
-import React, {createContext, useContext, useState, useCallback, useEffect, ReactNode} from 'react';
+import React, {createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode} from 'react';
 import {authService, AuthSession, SignInCredentials, SignUpCredentials, SignUpResult} from '../services/auth';
+import {apiClient} from '../services/apiClient';
 import {analytics} from '../services/analytics';
 
 interface UserData {
@@ -94,6 +95,82 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({children}) => {
     setIsAuthenticated(false);
     setUserData({name: '', email: '', avatarUrl: null});
   }, []);
+
+  // Register apiClient callbacks for 401 handling
+  useEffect(() => {
+    apiClient.onUnauthorized(() => {
+      signOut();
+    });
+
+    apiClient.onRefreshToken(async () => {
+      const newSession = await authService.refreshSession();
+      setSession(newSession);
+      return newSession.sessionToken;
+    });
+  }, [signOut]);
+
+  // Proactive refresh timer — refresh 5 minutes before expiry
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+
+    if (!session?.expiresAt || !session.refreshToken) return;
+
+    const expiresAt = new Date(session.expiresAt).getTime();
+    const now = Date.now();
+    const msUntilRefresh = expiresAt - now - 5 * 60 * 1000; // 5 min before expiry
+
+    if (msUntilRefresh <= 0) {
+      // Already within 5 min of expiry — refresh immediately
+      authService.refreshSession()
+        .then(newSession => setSession(newSession))
+        .catch(() => signOut());
+      return;
+    }
+
+    refreshTimerRef.current = setTimeout(async () => {
+      try {
+        const newSession = await authService.refreshSession();
+        setSession(newSession);
+      } catch {
+        signOut();
+      }
+    }, msUntilRefresh);
+
+    return () => {
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+        refreshTimerRef.current = null;
+      }
+    };
+  }, [session?.expiresAt, session?.refreshToken, signOut]);
+
+  // Tab resume — check session when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible' || !session) return;
+
+      try {
+        const status = await apiClient.checkSession();
+        if (!status.valid) {
+          signOut();
+        } else if (status.expires_in !== undefined && status.expires_in < 300) {
+          // Less than 5 minutes left — proactively refresh
+          const newSession = await authService.refreshSession();
+          setSession(newSession);
+        }
+      } catch {
+        // checkSession failed (possibly offline) — don't sign out, just log
+        console.warn('Session check failed on tab resume');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [session, signOut]);
 
   const updateUserData = useCallback((data: Partial<UserData>) => {
     authService.updateUserData(data);
