@@ -398,7 +398,11 @@ export const Step: React.FC<StepProps> = ({
                       overflow: 'hidden',
                       transition: 'max-height 0.6s ease-in-out',
                     }}
-                    dangerouslySetInnerHTML={{__html: marked.parse(copyDraft.draft_content) as string}}
+                    dangerouslySetInnerHTML={{__html: marked.parse(
+                      typeof copyDraft.draft_content === 'string'
+                        ? copyDraft.draft_content
+                        : JSON.stringify(copyDraft.draft_content, null, 2)
+                    ) as string}}
                   />
                   <div
                     style={{
